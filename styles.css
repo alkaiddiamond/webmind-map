@@ -94,3 +94,72 @@ button:hover {
   padding-top: 60px;
   box-sizing: border-box;
 }
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px;
+}
+
+#searchInput {
+  padding: 6px 12px;
+  border: 1px solid #64748b;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 14px;
+  width: 200px;
+}
+
+#searchInput::placeholder {
+  color: #94a3b8;
+}
+
+#searchPrev,
+#searchNext {
+  padding: 6px 12px;
+  border: 1px solid #64748b;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#searchPrev:hover,
+#searchNext:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#searchInfo {
+  color: #94a3b8;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+/* 高亮匹配的节点 */
+.search-highlight .glass-bg {
+  stroke: #3b82f6 !important;
+  stroke-width: 2px !important;
+}
+
+.search-focus .glass-bg {
+  stroke: #f59e0b !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+}
+
+#searchButton {
+  padding: 6px 12px;
+  border: 1px solid #64748b;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#searchButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

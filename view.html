@@ -14,6 +14,17 @@
         <option value="date">按日期分组</option>
       </select>
       <button id="themeToggle">切换主题</button>
+      <div class="search-container">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="搜索URL或标题，按回车执行..."
+        />
+        <button id="searchButton" title="搜索">🔍</button>
+        <button id="searchPrev" title="上一个匹配项">↑</button>
+        <button id="searchNext" title="下一个匹配项">↓</button>
+        <span id="searchInfo"></span>
+      </div>
     </div>
     <div id="container"></div>
     <script src="view.js"></script>
