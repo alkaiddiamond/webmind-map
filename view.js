@@ -188,13 +188,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
                 // 如果是IP地址或者以数字开头
-                if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname) || /^\d/.test(hostname)) {
-                    console.log('IP地址或数字开头域名:', hostname);
+                if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
+                    console.log('IP地址:', hostname);
+                    rootDomain = hostname;
+                } else if (!hostname.includes('.') || hostname === 'localhost') {
+                    // 如果是本地地址
+                    console.log('本地地址:', hostname);
                     rootDomain = hostname;
                 } else {
-                    // 对于其他情况，使用 getRootDomain
-                    rootDomain = getRootDomain(hostname);
+                    // 处理域名
+                    const parts = hostname.split('.');
+
+                    // 处理特殊情况
+                    const specialDomains = {
+                        'com.cn': true, 'net.cn': true, 'org.cn': true, 'gov.cn': true,
+                        'co.uk': true, 'co.jp': true, 'co.kr': true, 'co.nz': true,
+                        'com.au': true, 'com.tw': true, 'com.hk': true
+                    };
+
+                    // 确定根域名
+                    if (parts.length === 1) {
+                        // 一级域名
+                        rootDomain = hostname;
+                    } else {
+                        // 检查是否是特殊顶级域名
+                        const lastTwoParts = parts.slice(-2).join('.');
+                        if (specialDomains[lastTwoParts]) {
+                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域名
+                            rootDomain = parts.slice(-3).join('.');
+                        } else {
+                            // 使用最后两部分作为根域名（如 bilibili.com）
+                            rootDomain = parts.slice(-2).join('.');
+                        }
+                    }
+
+                    // 添加调试日志
+                    console.log('域名处理:', {
+                        original: hostname,
+                        parts: parts,
+                        rootDomain: rootDomain,
+                        isSpecialDomain: specialDomains[parts.slice(-2).join('.')]
+                    });
                 }
+
                 console.log('获取到根域名:', rootDomain);
 
                 if (!groups[rootDomain]) {
@@ -321,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     id: rootDomain,
                     label: `${rootDomain} (${domainData.totalCount})`,
                     children: [],
-                    collapsed: true,
+                    collapsed: true,  // 默认折叠根节点
                     isRoot: true
                 };
 
@@ -330,21 +366,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .sort((a, b) => b[1].length - a[1].length);
 
                 subdomainEntries.forEach(([subdomain, items]) => {
-                    const subdomainNode = {
-                        id: subdomain,
-                        label: `${subdomain} (${items.length})`,
-                        children: items
-                            .sort((a, b) => b.lastVisitTime - a.lastVisitTime)
-                            .map(item => ({
-                                id: String(item.id),
-                                label: item.title || item.url,
-                                url: item.url,
-                                isLeaf: true
-                            })),
-                        collapsed: true,
-                        isSubdomain: true
-                    };
-                    rootNode.children.push(subdomainNode);
+                    // 如果子域名和根域名相同，直接添加叶子节点
+                    if (subdomain === rootDomain) {
+                        items.sort((a, b) => b.lastVisitTime - a.lastVisitTime)
+                            .forEach(item => {
+                                rootNode.children.push({
+                                    id: String(item.id),
+                                    label: item.title || item.url,
+                                    url: item.url,
+                                    isLeaf: true
+                                });
+                            });
+                    } else {
+                        // 否则创建子域名节点
+                        const subdomainNode = {
+                            id: subdomain,
+                            label: `${subdomain} (${items.length})`,
+                            children: items
+                                .sort((a, b) => b.lastVisitTime - a.lastVisitTime)
+                                .map(item => ({
+                                    id: String(item.id),
+                                    label: item.title || item.url,
+                                    url: item.url,
+                                    isLeaf: true
+                                })),
+                            collapsed: true,  // 默认折叠子域名节点
+                            isSubdomain: true
+                        };
+                        rootNode.children.push(subdomainNode);
+                    }
                 });
 
                 treeData.children.push(rootNode);
@@ -382,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        const hideNode = (rootNode) => {
+        const processNodeState = (rootNode) => {
             const queue = [rootNode];
             const processedNodes = new Set();
 
@@ -397,14 +447,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                     nodeModel.children.forEach(childData => {
                         const childNode = graph.findById(childData.id);
                         if (childNode) {
-                            // 显示所有子节点
-                            graph.showItem(childNode);
-                            // 显示连接到子节点的边
-                            graph.getEdges().forEach(edge => {
-                                if (edge.getTarget().get('id') === childData.id) {
-                                    graph.showItem(edge);
-                                }
-                            });
+                            if (nodeModel.collapsed) {
+                                // 如果父节点是折叠状态，隐藏子节点
+                                graph.hideItem(childNode);
+                                // 隐藏连接到子节点的边
+                                graph.getEdges().forEach(edge => {
+                                    if (edge.getTarget().get('id') === childData.id) {
+                                        graph.hideItem(edge);
+                                    }
+                                });
+                            } else {
+                                // 如果父节点是展开状态，显示子节点
+                                graph.showItem(childNode);
+                                // 显示连接到子节点的边
+                                graph.getEdges().forEach(edge => {
+                                    if (edge.getTarget().get('id') === childData.id) {
+                                        graph.showItem(edge);
+                                    }
+                                });
+                            }
 
                             if (childData.children) {
                                 queue.push(childNode);
@@ -419,9 +480,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
-                // 设置所有根节点为展开状态
-                rootNode.getModel().collapsed = false;
-                hideNode(rootNode);
+                // 保持根节点的折叠状态
+                rootNode.getModel().collapsed = rootData.collapsed;
+                processNodeState(rootNode);
             }
         });
 
@@ -738,7 +799,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         graph.data(treeData);
         graph.render();
 
-        // 添加调试日志
+        // 添加��试日志
         console.log('渲染后的节点数量:', graph.getNodes().length);
         console.log('渲染后的节点列表:', graph.getNodes().map(node => ({
             id: node.get('id'),
@@ -774,40 +835,69 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (nodeModel.children) {
+                // 只处理当前节点的直接子节点
                 nodeModel.children.forEach(childData => {
                     const childNode = graph.findById(childData.id);
                     if (childNode) {
-                        // 处理节点显示/隐藏
                         if (isCollapsed) {
+                            // 折叠时隐藏子节点
                             graph.hideItem(childNode);
-                        } else {
-                            graph.showItem(childNode);
-                        }
-
-                        // 处理边的显示/隐藏
-                        graph.getEdges().forEach(edge => {
-                            if (edge.getTarget().get('id') === childData.id) {
-                                if (isCollapsed) {
+                            // 隐藏连接到子节点的边
+                            graph.getEdges().forEach(edge => {
+                                if (edge.getTarget().get('id') === childData.id) {
                                     graph.hideItem(edge);
-                                } else {
-                                    graph.showItem(edge);
                                 }
-                            }
-                        });
+                            });
 
-                        // 如果是折叠操作，递归隐藏所有子节点
-                        if (isCollapsed && childData.children) {
-                            childData.children.forEach(grandChild => {
-                                const grandChildNode = graph.findById(grandChild.id);
-                                if (grandChildNode) {
-                                    graph.hideItem(grandChildNode);
-                                    graph.getEdges().forEach(edge => {
-                                        if (edge.getTarget().get('id') === grandChild.id) {
-                                            graph.hideItem(edge);
+                            // 递归隐藏所有子节点的子节点
+                            const hideChildren = (node) => {
+                                if (node.children) {
+                                    node.children.forEach(grandChild => {
+                                        const grandChildNode = graph.findById(grandChild.id);
+                                        if (grandChildNode) {
+                                            graph.hideItem(grandChildNode);
+                                            graph.getEdges().forEach(edge => {
+                                                if (edge.getTarget().get('id') === grandChild.id) {
+                                                    graph.hideItem(edge);
+                                                }
+                                            });
+                                            hideChildren(grandChild);
                                         }
                                     });
                                 }
+                            };
+                            hideChildren(childData);
+                        } else {
+                            // 展开时只显示直接子节点
+                            graph.showItem(childNode);
+                            // 显示连接到子节点的边
+                            graph.getEdges().forEach(edge => {
+                                if (edge.getTarget().get('id') === childData.id) {
+                                    graph.showItem(edge);
+                                }
                             });
+
+                            // 保持子节点的折叠状态
+                            if (childNode.getModel().collapsed) {
+                                // 如果子节点是折叠状态，确保其子节点保持隐藏
+                                const hideCollapsedChildren = (node) => {
+                                    if (node.children) {
+                                        node.children.forEach(grandChild => {
+                                            const grandChildNode = graph.findById(grandChild.id);
+                                            if (grandChildNode) {
+                                                graph.hideItem(grandChildNode);
+                                                graph.getEdges().forEach(edge => {
+                                                    if (edge.getTarget().get('id') === grandChild.id) {
+                                                        graph.hideItem(edge);
+                                                    }
+                                                });
+                                                hideCollapsedChildren(grandChild);
+                                            }
+                                        });
+                                    }
+                                };
+                                hideCollapsedChildren(childData);
+                            }
                         }
                     }
                 });
@@ -1029,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 } catch (error) {
                     console.error('Error deleting history:', error);
-                    alert('删除历史记录失败');
+                    alert('删除历史记录失���');
                 }
                 return;
             }
