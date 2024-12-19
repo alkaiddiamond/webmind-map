@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
-        // 如果是IP地址，直接返回完整地址
+        // ��是IP地址，直接返回完整地址
         if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
             console.log('识别为IP地址:', hostname);
             return hostname;
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 检查最后两部分是否构成特殊顶级域名
         const lastTwoParts = parts.slice(-2).join('.');
         if (specialDomains[lastTwoParts]) {
-            // 如果是特��顶级域名，返回后三部分
+            // 如果是特顶级域名，返回后三部分
             const result = parts.slice(-3).join('.');
             console.log('返回特殊域名:', result);
             return result;
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const urlStr = item.url.toLowerCase();
                 console.log('正在处理URL:', urlStr);
 
-                // 修改正则表达式以更好地处理数字开头的域名和IP地址
+                // 修改正则���达式以更好地处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hostname = hostname.split(':')[0].trim();
                 console.log('处理后的域名:', hostname);
 
-                // 如果是 chrome:// 或 edge:// 特殊协议直接使用完整���名作为根名
+                // 如果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     console.log('特殊协议域名:', rootDomain);
@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 context.font = '13px Arial';
                 const textWidth = context.measureText(cfg.label).width;
 
-                // ��算节宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
+                // 计算节宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
                 const iconSpace = 24; // 所有节点都预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
@@ -568,7 +568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
 
-                // 选择颜色方案
+                // 选��颜色方案
                 let colorScheme;
                 if (cfg.id === 'root') {
                     colorScheme = colorSchemes.root;
@@ -688,7 +688,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 添加删除按钮
                 group.addShape('circle', {
                     attrs: {
-                        x: width - 24, // 保持删���按钮位置不变
+                        x: width - 24, // 保持删除按钮位置不变
                         y: height / 2,
                         r: 12,
                         fill: colorScheme.fill,
@@ -932,7 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 处理删除按钮点击
             if (targetName === 'delete-button' || targetName === 'delete-box') {
-                const confirmDelete = confirm('确定要删除这条��史记录吗？');
+                const confirmDelete = confirm('确定要删除这条历史记录吗？');
                 if (!confirmDelete) return;
 
                 try {
@@ -1062,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const restoreExpandState = (treeData) => {
                         if (treeData.children) {
                             treeData.children.forEach(node => {
-                                // ��果点ID展开集合，或者它是展开点的父节点，则设置为展开状态
+                                // 果点ID展开集合，或者它是展开点的父节点，则设置为展开状态
                                 if (expandedNodeIds.has(node.id) || expandedParentIds.has(node.id)) {
                                     node.collapsed = false;
                                 }
@@ -1232,126 +1232,153 @@ document.addEventListener('DOMContentLoaded', async () => {
         const queryLower = query.toLowerCase();
         console.log('开始搜索:', queryLower);
 
-        // 存储所有需要展开的节点路径
-        const nodesToExpand = new Set();
-        // 存储所有匹配的节���
-        const matchedNodes = new Map();
+        // 存储所有���配的节点和它们的路径
+        const matchedPaths = [];
 
-        // 递归搜索树形数据中的所有节点
-        const searchInTreeData = (nodeData, parentNodes = []) => {
+        // 递归搜索函数
+        function searchNode(nodeData, currentPath = []) {
             const label = nodeData.label || '';
             const url = nodeData.url || '';
             const isMatched = label.toLowerCase().includes(queryLower) || url.toLowerCase().includes(queryLower);
 
+            // 如果当前节点匹配，记录完整路径
             if (isMatched) {
-                // 将当前节点和所有父节点添加到需要展开的集合中
-                [...parentNodes, nodeData].forEach(node => nodesToExpand.add(node.id));
-                const node = graph.findById(nodeData.id);
-                if (node) {
-                    matchedNodes.set(nodeData.id, node);
-                }
-            }
-
-            // 递归搜索子节点
-            if (nodeData.children) {
-                nodeData.children.forEach(child => {
-                    searchInTreeData(child, [...parentNodes, nodeData]);
+                matchedPaths.push([...currentPath, nodeData]);
+                console.log('找到匹配节点:', {
+                    id: nodeData.id,
+                    label: nodeData.label,
+                    path: currentPath.map(n => n.label),
+                    depth: currentPath.length
                 });
             }
-        };
+
+            // 继续搜索子节点，无论是否折叠
+            if (nodeData.children) {
+                nodeData.children.forEach(child => {
+                    searchNode(child, [...currentPath, nodeData]);
+                });
+            }
+        }
 
         // 从缓存的树形数据开始搜索
         if (treeDataCache.children) {
             treeDataCache.children.forEach(child => {
-                searchInTreeData(child, []);
+                searchNode(child, []);
             });
         }
 
-        // 一次性展开所有需要展开的节点
-        const processedNodes = new Set();
-        nodesToExpand.forEach(nodeId => {
-            const node = graph.findById(nodeId);
-            if (!node) return;
+        console.log('找到匹配路径数:', matchedPaths.length);
 
-            // 获取从根节点到当前节点的路径
-            const path = [];
-            let currentNode = node;
-            while (currentNode) {
-                path.unshift(currentNode);
-                const parentId = currentNode.get('parent');
-                currentNode = parentId ? graph.findById(parentId) : null;
-            }
+        // 如果没有匹配结果，直接返回
+        if (matchedPaths.length === 0) {
+            updateSearchInfo();
+            return;
+        }
 
-            // 从根节点开始展开
-            path.forEach(pathNode => {
-                if (processedNodes.has(pathNode.get('id'))) return;
-                processedNodes.add(pathNode.get('id'));
+        // 找到最大深度
+        const maxDepth = Math.max(...matchedPaths.map(path => path.length));
+        console.log('最大深度:', maxDepth);
 
-                const model = pathNode.getModel();
-                if (model.collapsed) {
-                    model.collapsed = false;
-                    graph.updateItem(pathNode, model);
+        // 按深度逐层展开节点
+        function expandNodesAtDepth(depth) {
+            console.log('展开深度', depth, '的节点');
+            let hasExpandedNodes = false;
 
-                    // 更新展开/折叠图标
-                    const group = pathNode.getContainer();
-                    const icon = group.find(element => element.get('name') === 'collapse-text');
-                    if (icon) {
-                        icon.attr('text', '-');
-                    }
+            matchedPaths.forEach(path => {
+                if (path.length >= depth) {
+                    const nodeData = path[depth - 1];
+                    const node = graph.findById(nodeData.id);
+                    if (node) {
+                        const model = node.getModel();
+                        if (model.collapsed) {
+                            hasExpandedNodes = true;
+                            model.collapsed = false;
+                            graph.updateItem(node, {
+                                collapsed: false
+                            });
 
-                    // 显示直接子节点
-                    if (model.children) {
-                        model.children.forEach(childData => {
-                            const childNode = graph.findById(childData.id);
-                            if (childNode) {
-                                graph.showItem(childNode);
-                                // 显示连接到子节点的边
+                            // 更新展开/折叠图标
+                            const group = node.getContainer();
+                            const icon = group.find(element => element.get('name') === 'collapse-text');
+                            if (icon) {
+                                icon.attr('text', '-');
+                            }
+
+                            // 显示当前节点
+                            graph.showItem(node);
+
+                            // 显示到下一层节点的边
+                            if (depth < path.length) {
+                                const nextNodeData = path[depth];
                                 graph.getEdges().forEach(edge => {
-                                    if (edge.getTarget().get('id') === childData.id) {
+                                    if (edge.getSource().get('id') === nodeData.id &&
+                                        edge.getTarget().get('id') === nextNodeData.id) {
                                         graph.showItem(edge);
                                     }
                                 });
                             }
-                        });
+                        }
                     }
                 }
             });
-        });
 
-        // 将匹配的节点添加到搜索结果
-        searchResults = Array.from(matchedNodes.values());
+            // 如果当前深度有节点被展开，更新布局
+            if (hasExpandedNodes) {
+                graph.layout();
+                graph.paint();
+            }
 
-        // 为所有搜索结果添加高亮效果
-        searchResults.forEach(node => {
-            const bbox = node.getBBox();
-            node.get('group').addShape('rect', {
-                attrs: {
-                    x: 0,
-                    y: 0,
-                    width: bbox.width,
-                    height: bbox.height,
-                    fill: 'transparent',
-                    stroke: '#3b82f6',
-                    lineWidth: 2,
-                    radius: 8
-                },
-                name: 'search-highlight'
-            });
-        });
-
-        // 重新布局图
-        graph.layout();
-
-        // 更新搜索信息
-        updateSearchInfo();
-
-        // 如果有搜索结果，立即跳转到第一个
-        if (searchResults.length > 0) {
-            currentSearchIndex = 0;
-            focusSearchResult();
+            // 如果还有更深的层级，继续展开
+            if (depth < maxDepth) {
+                setTimeout(() => {
+                    expandNodesAtDepth(depth + 1);
+                }, 100); // 延迟100ms展开下一层
+            } else {
+                // 所有层级都展开完成后，高亮匹配节点
+                highlightMatchedNodes();
+            }
         }
 
-        console.log('搜索完成，找到匹配项:', searchResults.length);
+        // 高亮匹配的节点
+        function highlightMatchedNodes() {
+            searchResults = matchedPaths.map(path => {
+                const targetNode = graph.findById(path[path.length - 1].id);
+                if (targetNode) {
+                    // 确保节点可见
+                    graph.showItem(targetNode);
+
+                    // 添加高亮效果
+                    const bbox = targetNode.getBBox();
+                    targetNode.get('group').addShape('rect', {
+                        attrs: {
+                            x: 0,
+                            y: 0,
+                            width: bbox.width,
+                            height: bbox.height,
+                            fill: 'transparent',
+                            stroke: '#3b82f6',
+                            lineWidth: 2,
+                            radius: 8
+                        },
+                        name: 'search-highlight'
+                    });
+                    return targetNode;
+                }
+                return null;
+            }).filter(Boolean);
+
+            // 更新搜索信息
+            updateSearchInfo();
+
+            // 如果有搜索结果，跳转到第一个
+            if (searchResults.length > 0) {
+                currentSearchIndex = 0;
+                focusSearchResult();
+            }
+        }
+
+        // 开始从第一层展开
+        expandNodesAtDepth(1);
     }
 
     function focusSearchResult() {
