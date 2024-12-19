@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 如果域名不包含点号或者是localhost，直接返回
+        // 如果域��不包含点号或者是localhost，直接返回
         if (!hostname.includes('.') || hostname === 'localhost') {
             console.log('识别为本地地址:', hostname);
             return hostname;
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hostname = hostname.split(':')[0].trim();
                 console.log('处理后的域名:', hostname);
 
-                // 如果是 chrome:// 或 edge:// ���特殊协议，直接使用完整域名作为根名
+                // 如果是 chrome:// 或 edge:// 特殊协议，直接使用完整域名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     console.log('特殊协议域名:', rootDomain);
@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-                // 如果不��叶子节点，添加展开/折叠图标
+                // 如果不叶子节点，添加展开/折叠图标
                 if (!isLeaf && children && children.length) {
                     const iconBox = group.addShape('circle', {
                         attrs: {
@@ -825,7 +825,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 调用 initializeCollapsedState 时传入必要的���数
+        // 调用 initializeCollapsedState 时传入必要的数
         initializeCollapsedState(graph, treeData);
 
         // 处理节点的显示/隐藏
@@ -1038,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const nodeModel = node.getModel();
                         if (!nodeModel.collapsed) {
                             expandedNodeIds.add(nodeModel.id);
-                            // 如果展开节点，其父节点也该是展开的
+                            // 如果展开节点，��父节点也该是展开的
                             const parentNode = graph.findById(node.get('parent'));
                             if (parentNode) {
                                 expandedParentIds.add(parentNode.get('id'));
@@ -1071,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newTreeData = restoreExpandState(buildTreeData(groups));
                     graph.changeData(newTreeData);
 
-                    // 隐藏折叠节点的子��点
+                    // 隐藏折叠节点的子点
                     const hideCollapsedChildren = (rootNode) => {
                         const queue = [{ node: rootNode, parentCollapsed: false }];
                         const processedNodes = new Set();
@@ -1240,11 +1240,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 检查子节点是否匹配
             let hasMatchingChild = false;
+            let matchingChildData = null;
             if (nodeData.children) {
-                hasMatchingChild = nodeData.children.some(child => {
+                nodeData.children.forEach(child => {
                     // 递归检查子节点及其子节点
                     const checkChildrenRecursively = (node) => {
                         if (isNodeMatching(node)) {
+                            hasMatchingChild = true;
+                            matchingChildData = node;
                             return true;
                         }
                         if (node.children) {
@@ -1252,7 +1255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                         return false;
                     };
-                    return checkChildrenRecursively(child);
+                    checkChildrenRecursively(child);
                 });
             }
 
@@ -1300,8 +1303,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     });
 
-                    // 确保当前节点可见
+                    // 确保当前节点可见并展开
                     graph.showItem(node);
+                    if (node.getModel().collapsed) {
+                        const model = node.getModel();
+                        model.collapsed = false;
+                        graph.updateItem(node, model);
+
+                        // 显示当前节点的子节点
+                        if (model.children) {
+                            model.children.forEach(childData => {
+                                const childNode = graph.findById(childData.id);
+                                if (childNode) {
+                                    graph.showItem(childNode);
+                                    graph.getEdges().forEach(edge => {
+                                        if (edge.getTarget().get('id') === childData.id) {
+                                            graph.showItem(edge);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+
                     // 显示连接到当前节点的边
                     graph.getEdges().forEach(edge => {
                         if (edge.getTarget().get('id') === nodeData.id) {
@@ -1328,13 +1352,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             },
                             name: 'search-highlight'
                         });
-                    }
-
-                    // 如果有匹配的子节点，展开当前节点
-                    if (hasMatchingChild && node.getModel().collapsed) {
-                        const model = node.getModel();
-                        model.collapsed = false;
-                        graph.updateItem(node, model);
                     }
                 }
             }
@@ -1406,14 +1423,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             name: 'search-focus'
         });
 
-        // 展开到该节点的路径
-        expandNodePath(node);
-
-        // 将节点移动到视图中心
-        graph.focusItem(node, true, {
-            easing: 'easeCubic',
-            duration: 500
-        });
+        // 确保节点在视图中心
+        setTimeout(() => {
+            graph.focusItem(node, true, {
+                easing: 'easeCubic',
+                duration: 500,
+                padding: [20, 20, 20, 20]
+            });
+        }, 100);
 
         updateSearchInfo();
     }
