@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 nodeModel.children.forEach(childData => {
                     const childNode = graph.findById(childData.id);
                     if (childNode) {
-                        // 处理节点���示/隐藏
+                        // 处理节点显示/隐藏
                         if (isCollapsed) {
                             graph.hideItem(childNode);
                         } else {
@@ -608,11 +608,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         // 删除域名或日期下的所有记录
                         const deletePromises = [];
-                        const collectUrlsToDelete = (node) => {
-                            if (node.isLeaf && node.url) {
-                                deletePromises.push(chrome.history.deleteUrl({ url: node.url }));
-                            } else if (node.children) {
-                                node.children.forEach(collectUrlsToDelete);
+                        const collectUrlsToDelete = (rootNode) => {
+                            const queue = [rootNode];
+                            const processedNodes = new Set();
+
+                            while (queue.length > 0) {
+                                const node = queue.shift();
+                                if (processedNodes.has(node.id)) continue;
+                                processedNodes.add(node.id);
+
+                                if (node.isLeaf && node.url) {
+                                    deletePromises.push(chrome.history.deleteUrl({ url: node.url }));
+                                }
+                                if (node.children) {
+                                    queue.push(...node.children);
+                                }
                             }
                         };
                         collectUrlsToDelete(model);
@@ -627,15 +637,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
 
                         // 移除当前节点及其所有子节点
-                        const removeNodeAndChildren = (node) => {
-                            if (node.children) {
-                                node.children.forEach(child => {
-                                    const childNode = graph.findById(child.id);
-                                    if (childNode) {
-                                        removeNodeAndChildren(childNode.getModel());
-                                        graph.removeItem(childNode);
-                                    }
-                                });
+                        const removeNodeAndChildren = (rootNode) => {
+                            const queue = [rootNode];
+                            const processedNodes = new Set();
+
+                            while (queue.length > 0) {
+                                const node = queue.shift();
+                                if (processedNodes.has(node.id)) continue;
+                                processedNodes.add(node.id);
+
+                                if (node.children) {
+                                    node.children.forEach(child => {
+                                        const childNode = graph.findById(child.id);
+                                        if (childNode) {
+                                            queue.push(childNode.getModel());
+                                            graph.removeItem(childNode);
+                                        }
+                                    });
+                                }
                             }
                         };
                         removeNodeAndChildren(model);
@@ -651,12 +670,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     historyItems.length = 0;
                     newHistoryItems.forEach(item => historyItems.push(item));
 
-                    // 保存当前所有展开节点的ID
+                    // 保存当前所有展开节点的ID和它们的父节点ID
                     const expandedNodeIds = new Set();
+                    const expandedParentIds = new Set();
                     graph.getNodes().forEach(node => {
                         const nodeModel = node.getModel();
                         if (!nodeModel.collapsed) {
                             expandedNodeIds.add(nodeModel.id);
+                            // 如果是展开的节点，其父节点也��该是展开的
+                            const parentNode = graph.findById(node.get('parent'));
+                            if (parentNode) {
+                                expandedParentIds.add(parentNode.get('id'));
+                            }
                         }
                     });
 
@@ -670,7 +695,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const restoreExpandState = (treeData) => {
                         if (treeData.children) {
                             treeData.children.forEach(node => {
-                                if (expandedNodeIds.has(node.id)) {
+                                // 如果节点ID在展开集合中，或者它是展开节点的父节点，则设置为展开状态
+                                if (expandedNodeIds.has(node.id) || expandedParentIds.has(node.id)) {
                                     node.collapsed = false;
                                 }
                                 if (node.children) {
@@ -685,37 +711,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                     graph.changeData(newTreeData);
 
                     // 隐藏折叠节点的子节点
-                    const hideCollapsedChildren = (node) => {
-                        const model = node.getModel();
-                        if (model.children && model.collapsed) {
-                            model.children.forEach(childData => {
-                                const childNode = graph.findById(childData.id);
-                                if (childNode) {
-                                    graph.hideItem(childNode);
-                                    const edges = childNode.getEdges();
-                                    edges.forEach(edge => graph.hideItem(edge));
-                                    hideCollapsedChildren(childNode);
-                                }
-                            });
-                        } else if (model.children && !model.collapsed) {
-                            model.children.forEach(childData => {
-                                const childNode = graph.findById(childData.id);
-                                if (childNode) {
-                                    hideCollapsedChildren(childNode);
-                                }
-                            });
+                    const hideCollapsedChildren = (rootNode) => {
+                        const queue = [{ node: rootNode, parentCollapsed: false }];
+                        const processedNodes = new Set();
+
+                        while (queue.length > 0) {
+                            const { node, parentCollapsed } = queue.shift();
+                            const model = node.getModel();
+
+                            if (processedNodes.has(model.id)) continue;
+                            processedNodes.add(model.id);
+
+                            if (model.children) {
+                                const isCurrentNodeCollapsed = model.collapsed;
+                                model.children.forEach(childData => {
+                                    const childNode = graph.findById(childData.id);
+                                    if (childNode) {
+                                        // 只有当当前节点折叠或父节点折叠时才隐藏子节点
+                                        if (isCurrentNodeCollapsed || parentCollapsed) {
+                                            graph.hideItem(childNode);
+                                            graph.getEdges().forEach(edge => {
+                                                if (edge.getTarget().get('id') === childData.id) {
+                                                    graph.hideItem(edge);
+                                                }
+                                            });
+                                        }
+                                        // 将父节点的折叠状态传递给子节点
+                                        queue.push({
+                                            node: childNode,
+                                            parentCollapsed: isCurrentNodeCollapsed || parentCollapsed
+                                        });
+                                    }
+                                });
+                            }
                         }
                     };
 
                     // 处理所有根节点
-                    graph.getNodes().filter(node => !node.get('parent')).forEach(rootNode => {
+                    const rootNodes = graph.getNodes().filter(node => !node.get('parent'));
+                    rootNodes.forEach(rootNode => {
                         hideCollapsedChildren(rootNode);
                     });
 
                     // 恢复视图状态
                     if (matrix) {
-                        graph.getGroup().setMatrix(matrix);
-                        graph.zoomTo(zoom);
+                        setTimeout(() => {
+                            graph.getGroup().setMatrix(matrix);
+                            graph.zoomTo(zoom);
+                        }, 0);
                     }
                 } catch (error) {
                     console.error('Error deleting history:', error);
@@ -739,7 +782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 newCollapsedState: collapsed
             });
 
-            // 更新展开/折叠图标
+            // 更新展开/折叠���标
             const group = item.getContainer();
             const icon = group.find(element => element.get('name') === 'collapse-text');
             if (icon) {
