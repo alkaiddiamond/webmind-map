@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
-        // ��果是IP地址，直接返回完整地址
+        // 果是IP地址，直接返回完整地址
         if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
             console.log('识别为IP地址:', hostname);
             return hostname;
@@ -141,9 +141,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let hostname;
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
-                console.log('正在处理URL:', urlStr);
+                console.log('��在处理URL:', urlStr);
 
-                // 修改正���表达式以更好地处理数字开头的域名和IP地址
+                // 修改正表达式以更好地处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 检查是否是特殊顶级域名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
-                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域���
+                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域
                             rootDomain = parts.slice(-3).join('.');
                         } else {
                             // 使用最后两部分作为根域名（如 bilibili.com）
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 groups[rootDomain].totalCount++;
 
                 // 添加调试日志
-                console.log('添加记录后的分组状态:', {
+                console.log('添加记��后的分组状态:', {
                     rootDomain,
                     hostname,
                     totalCount: groups[rootDomain].totalCount,
@@ -1058,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? groupByDomain(historyItems)
                         : groupByDate(historyItems);
 
-                    // 恢复节点的展开状态
+                    // 恢复节点的展��状态
                     const restoreExpandState = (treeData) => {
                         if (treeData.children) {
                             treeData.children.forEach(node => {
@@ -1328,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 graph.paint();
             }
 
-            // 如果还有更深的层级，继续展开
+            // 如果还有更���的层级，继续展开
             if (depth < maxDepth) {
                 setTimeout(() => {
                     expandNodesAtDepth(depth + 1);
@@ -1410,7 +1410,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             name: 'search-focus'
         });
 
-        // 使用 G6 的 focusItem 方法来定位节点
+        // 获取当前节点的所有父节点
+        const getParentNodes = (node) => {
+            const parents = [];
+            let current = node;
+            while (current.get('parent')) {
+                const parent = graph.findById(current.get('parent'));
+                if (parent) {
+                    parents.push(parent);
+                    current = parent;
+                } else {
+                    break;
+                }
+            }
+            return parents;
+        };
+
+        // 计算包含当前节点及其所有父节点的边界框
+        const parentNodes = getParentNodes(node);
+        const allNodes = [node, ...parentNodes];
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        allNodes.forEach(n => {
+            const box = n.getBBox();
+            const matrix = n.get('group').getMatrix();
+            const x = matrix[6];
+            const y = matrix[7];
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + box.width);
+            maxY = Math.max(maxY, y + box.height);
+        });
+
+        // 计算合适的缩放级别
+        const padding = 100;  // 边距
+        const viewportWidth = graph.get('width');
+        const viewportHeight = graph.get('height');
+        const contentWidth = maxX - minX + padding * 2;
+        const contentHeight = maxY - minY + padding * 2;
+
+        const scaleX = viewportWidth / contentWidth;
+        const scaleY = viewportHeight / contentHeight;
+        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大缩放级别为1
+
+        // 先缩放到合适的级别
+        graph.zoomTo(scale, {
+            x: (minX + maxX) / 2,
+            y: (minY + maxY) / 2
+        });
+
+        // 然后使用 focusItem 居中显示当前节点
         graph.focusItem(node, true, {
             easing: 'easeCubic',
             duration: 300,
