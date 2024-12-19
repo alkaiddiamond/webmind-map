@@ -5,7 +5,8 @@
   "description": "将浏览历史以思维导图的形式展示",
   "permissions": [
     "history",
-    "tabs"
+    "tabs",
+    "favicon"
   ],
   "action": {
     "default_title": "浏览历史思维导图"

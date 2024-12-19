@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const textWidth = context.measureText(cfg.label).width;
 
                 // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域（如果有）
-                const buttonSpace = (!isLeaf && children && children.length) ? 100 : 40; // 展开按钮+删除按钮(增加间距) 或 只有删除按钮
+                const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40; // 展开按钮+删除按钮 或 只有删除按钮
                 const iconSpace = isLeaf && cfg.url ? 24 : 0; // 如果是叶子节点且有URL，添加图标空间
                 const width = Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400); // 最小180px，最大400px
 
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 绘制文本
                 if (isLeaf && cfg.url) {
                     // 添加网站图标
-                    const faviconUrl = `https://www.google.com/s2/favicons?domain=${new URL(cfg.url).hostname}&sz=16`;
+                    const faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
                     group.addShape('image', {
                         attrs: {
                             x: 12,
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!isLeaf && children && children.length) {
                     const iconBox = group.addShape('circle', {
                         attrs: {
-                            x: width - 60,
+                            x: width - 52, // 调整展开按钮位置
                             y: height / 2,
                             r: 12,
                             fill: colorScheme.fill,
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     group.addShape('text', {
                         attrs: {
-                            x: width - 60,
+                            x: width - 52, // 调整展开按钮文字位置
                             y: height / 2,
                             text: collapsed ? '+' : '-',
                             fontSize: 16,
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 添加删除按钮
                 group.addShape('circle', {
                     attrs: {
-                        x: width - 24,
+                        x: width - 24, // 保持删除按钮位置不变
                         y: height / 2,
                         r: 12,
                         fill: colorScheme.fill,
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 group.addShape('text', {
                     attrs: {
-                        x: width - 24,
+                        x: width - 24, // 保持删除按钮文字位置不变
                         y: height / 2,
                         text: '×',
                         fontSize: 16,
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const context = canvas.getContext('2d');
                     context.font = '13px Arial';
                     const textWidth = context.measureText(d.label).width;
-                    const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 100 : 40; // 增加按钮区域空间
+                    const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40; // 展开按钮+删除按钮 或 只有删除按钮
                     const iconSpace = d.isLeaf && d.url ? 24 : 0;
                     return Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400);
                 },
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
 
-                        // 如果是折叠操作，递归隐藏所有子节点
+                        // 如果是折叠操作，递归隐藏所有子��点
                         if (isCollapsed && childData.children) {
                             childData.children.forEach(grandChild => {
                                 const grandChildNode = graph.findById(grandChild.id);
@@ -646,36 +646,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                     historyItems.length = 0;
                     newHistoryItems.forEach(item => historyItems.push(item));
 
+                    // 保存当前所有展开节点的ID
+                    const expandedNodeIds = new Set();
+                    graph.getNodes().forEach(node => {
+                        const nodeModel = node.getModel();
+                        if (!nodeModel.collapsed) {
+                            expandedNodeIds.add(nodeModel.id);
+                        }
+                    });
+
                     // 重新构建数据并更新图
                     const groupingMethod = groupBySelect.value;
                     const groups = groupingMethod === 'domain'
                         ? groupByDomain(historyItems)
                         : groupByDate(historyItems);
 
-                    const newTreeData = buildTreeData(groups);
+                    // 恢复节点的展开状态
+                    const restoreExpandState = (treeData) => {
+                        if (treeData.children) {
+                            treeData.children.forEach(node => {
+                                if (expandedNodeIds.has(node.id)) {
+                                    node.collapsed = false;
+                                }
+                                if (node.children) {
+                                    restoreExpandState(node);
+                                }
+                            });
+                        }
+                        return treeData;
+                    };
+
+                    const newTreeData = restoreExpandState(buildTreeData(groups));
                     graph.changeData(newTreeData);
 
-                    // 恢复所有节点的折叠状态
-                    newTreeData.children.forEach(groupNode => {
-                        if (groupNode.collapsed) {
-                            const node = graph.findById(groupNode.id);
-                            if (node) {
-                                const hideChildren = (parentNode) => {
-                                    const model = parentNode.getModel();
-                                    if (model.children) {
-                                        model.children.forEach(childData => {
-                                            const childNode = graph.findById(childData.id);
-                                            if (childNode) {
-                                                graph.hideItem(childNode);
-                                                const edges = childNode.getEdges();
-                                                edges.forEach(edge => graph.hideItem(edge));
-                                            }
-                                        });
-                                    }
-                                };
-                                hideChildren(node);
-                            }
+                    // 隐藏折叠节点的子节点
+                    const hideCollapsedChildren = (node) => {
+                        const model = node.getModel();
+                        if (model.children && model.collapsed) {
+                            model.children.forEach(childData => {
+                                const childNode = graph.findById(childData.id);
+                                if (childNode) {
+                                    graph.hideItem(childNode);
+                                    const edges = childNode.getEdges();
+                                    edges.forEach(edge => graph.hideItem(edge));
+                                    hideCollapsedChildren(childNode);
+                                }
+                            });
+                        } else if (model.children && !model.collapsed) {
+                            model.children.forEach(childData => {
+                                const childNode = graph.findById(childData.id);
+                                if (childNode) {
+                                    hideCollapsedChildren(childNode);
+                                }
+                            });
                         }
+                    };
+
+                    // 处理所有根节点
+                    graph.getNodes().filter(node => !node.get('parent')).forEach(rootNode => {
+                        hideCollapsedChildren(rootNode);
                     });
 
                     // 恢复视图状态
