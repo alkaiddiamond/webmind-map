@@ -175,8 +175,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         G6.registerNode('mindmap-node', {
             draw: (cfg, group) => {
                 const { collapsed = true, children, isLeaf } = cfg;
-                const width = 200;
                 const height = 40;
+
+                // 计算文本宽度
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                context.font = '13px Arial';
+                const textWidth = context.measureText(cfg.label).width;
+
+                // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域（如果有）
+                const buttonSpace = (!isLeaf && children && children.length) ? 100 : 40; // 展开按钮+删除按钮(增加间距) 或 只有删除按钮
+                const iconSpace = isLeaf && cfg.url ? 24 : 0; // 如果是叶子节点且有URL，添加图标空间
+                const width = Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400); // 最小180px，最大400px
 
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
@@ -226,26 +236,59 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 // 绘制文本
-                group.addShape('text', {
-                    attrs: {
-                        text: cfg.label,
-                        x: 12,
-                        y: height / 2,
-                        fontSize: 13,
-                        fontFamily: 'Arial',
-                        fill: colorScheme.textColor,
-                        textBaseline: 'middle',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                    },
-                    name: 'label'
-                });
+                if (isLeaf && cfg.url) {
+                    // 添加网站图标
+                    const faviconUrl = `https://www.google.com/s2/favicons?domain=${new URL(cfg.url).hostname}&sz=16`;
+                    group.addShape('image', {
+                        attrs: {
+                            x: 12,
+                            y: height / 2 - 8,
+                            width: 16,
+                            height: 16,
+                            img: faviconUrl,
+                            cursor: 'pointer',
+                        },
+                        name: 'favicon'
+                    });
+
+                    // 绘制标题
+                    group.addShape('text', {
+                        attrs: {
+                            text: cfg.label,
+                            x: 36, // 图标宽度 + 间距
+                            y: height / 2,
+                            fontSize: 13,
+                            fontFamily: 'Arial',
+                            fill: colorScheme.textColor,
+                            textBaseline: 'middle',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                        },
+                        name: 'label'
+                    });
+                } else {
+                    // 非叶子节点只显示文本
+                    group.addShape('text', {
+                        attrs: {
+                            text: cfg.label,
+                            x: 12,
+                            y: height / 2,
+                            fontSize: 13,
+                            fontFamily: 'Arial',
+                            fill: colorScheme.textColor,
+                            textBaseline: 'middle',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                        },
+                        name: 'label'
+                    });
+                }
 
                 // 如果不是叶子节点，添加展开/折叠图标
                 if (!isLeaf && children && children.length) {
                     const iconBox = group.addShape('circle', {
                         attrs: {
-                            x: width - 24,
+                            x: width - 60,
                             y: height / 2,
                             r: 12,
                             fill: colorScheme.fill,
@@ -258,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     group.addShape('text', {
                         attrs: {
-                            x: width - 24,
+                            x: width - 60,
                             y: height / 2,
                             text: collapsed ? '+' : '-',
                             fontSize: 16,
@@ -273,28 +316,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // 添加删除按钮
-                const deleteBox = group.addShape('circle', {
+                group.addShape('circle', {
                     attrs: {
-                        x: width - 20,
+                        x: width - 24,
                         y: height / 2,
-                        r: 8,
-                        fill: isDarkTheme ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
-                        stroke: '#ef4444',
+                        r: 12,
+                        fill: colorScheme.fill,
+                        stroke: colorScheme.stroke,
                         lineWidth: 1,
                         cursor: 'pointer',
-                        opacity: 0.8
                     },
                     name: 'delete-box'
                 });
 
                 group.addShape('text', {
                     attrs: {
-                        x: width - 20,
+                        x: width - 24,
                         y: height / 2,
                         text: '×',
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: 'bold',
-                        fill: '#ef4444',
+                        fill: colorScheme.textColor,
                         textAlign: 'center',
                         textBaseline: 'middle',
                         cursor: 'pointer',
@@ -338,7 +380,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
             defaultNode: {
                 type: 'mindmap-node',
-                size: [200, 40],
                 anchorPoints: [[0, 0.5], [1, 0.5]]
             },
             defaultEdge: {
@@ -354,17 +395,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return d.id;
                 },
                 getHeight: () => 40,
-                getWidth: () => 220,
+                getWidth: (d) => {
+                    // 创建临时canvas计算文本宽度
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    context.font = '13px Arial';
+                    const textWidth = context.measureText(d.label).width;
+                    const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 100 : 40; // 增加按钮区域空间
+                    const iconSpace = d.isLeaf && d.url ? 24 : 0;
+                    return Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400);
+                },
                 getVGap: (node) => {
                     const model = node.getModel ? node.getModel() : node;
+                    if (model.collapsed) return 10;
                     if (model.isLeaf) return 10;
                     if (model.isSubdomain) return 15;
-                    return 25;
+                    return 20;
                 },
-                getHGap: () => 80,
+                getHGap: () => 50,
                 getSide: () => 'right',
                 preventOverlap: true,
-                preventOverlapPadding: 10,
+                preventOverlapPadding: 5,
             },
             animate: false,
             fitView: true,
