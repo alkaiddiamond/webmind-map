@@ -183,10 +183,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 context.font = '13px Arial';
                 const textWidth = context.measureText(cfg.label).width;
 
-                // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域（如果有）
-                const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40; // 展开按钮+删除按钮 或 只有删除按钮
-                const iconSpace = isLeaf && cfg.url ? 24 : 0; // 如果是叶子节点且有URL，添加图标空间
-                const width = Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400); // 最小180px，最大400px
+                // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
+                const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
+                const iconSpace = 24; // 所有节点都预留图标空间
+                const width = Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400);
 
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
@@ -235,10 +235,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'glass-highlight'
                 });
 
-                // 绘制文本
+                // 查找第一个可用的URL
+                const findFirstUrl = (node) => {
+                    if (node.url) return node.url;
+                    if (node.children && node.children.length > 0) {
+                        for (const child of node.children) {
+                            const url = findFirstUrl(child);
+                            if (url) return url;
+                        }
+                    }
+                    return null;
+                };
+
+                // 获取favicon URL
+                let faviconUrl = '';
                 if (isLeaf && cfg.url) {
-                    // 添加网站图标
-                    const faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
+                    faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
+                } else if (children && children.length > 0) {
+                    const firstUrl = findFirstUrl(children[0]);
+                    if (firstUrl) {
+                        faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
+                    }
+                }
+
+                // 添加favicon
+                if (faviconUrl) {
                     group.addShape('image', {
                         attrs: {
                             x: 12,
@@ -250,39 +271,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                         },
                         name: 'favicon'
                     });
-
-                    // 绘制标题
-                    group.addShape('text', {
-                        attrs: {
-                            text: cfg.label,
-                            x: 36, // 图标宽度 + 间距
-                            y: height / 2,
-                            fontSize: 13,
-                            fontFamily: 'Arial',
-                            fill: colorScheme.textColor,
-                            textBaseline: 'middle',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                        },
-                        name: 'label'
-                    });
-                } else {
-                    // 非叶子节点只显示文本
-                    group.addShape('text', {
-                        attrs: {
-                            text: cfg.label,
-                            x: 12,
-                            y: height / 2,
-                            fontSize: 13,
-                            fontFamily: 'Arial',
-                            fill: colorScheme.textColor,
-                            textBaseline: 'middle',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                        },
-                        name: 'label'
-                    });
                 }
+
+                // 绘制文本
+                group.addShape('text', {
+                    attrs: {
+                        text: cfg.label,
+                        x: faviconUrl ? 36 : 12,
+                        y: height / 2,
+                        fontSize: 13,
+                        fontFamily: 'Arial',
+                        fill: colorScheme.textColor,
+                        textBaseline: 'middle',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                    },
+                    name: 'label'
+                });
 
                 // 如果不是叶子节点，添加展开/折叠图标
                 if (!isLeaf && children && children.length) {
@@ -401,8 +406,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const context = canvas.getContext('2d');
                     context.font = '13px Arial';
                     const textWidth = context.measureText(d.label).width;
-                    const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40; // 展开按钮+删除按钮 或 只有删除按钮
-                    const iconSpace = d.isLeaf && d.url ? 24 : 0;
+                    const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
+                    const iconSpace = 24; // 所有节点都预留图标空间
                     return Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400);
                 },
                 getVGap: (node) => {
@@ -505,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 nodeModel.children.forEach(childData => {
                     const childNode = graph.findById(childData.id);
                     if (childNode) {
-                        // 处理节点显示/隐藏
+                        // 处理节点���示/隐藏
                         if (isCollapsed) {
                             graph.hideItem(childNode);
                         } else {
@@ -523,7 +528,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
 
-                        // 如果是折叠操作，递归隐藏所有子��点
+                        // 如果是折叠操作，递归隐藏所有子节点
                         if (isCollapsed && childData.children) {
                             childData.children.forEach(grandChild => {
                                 const grandChildNode = graph.findById(grandChild.id);
