@@ -361,6 +361,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 初始化折叠状态
     const initializeCollapsedState = (graph, treeData) => {
+        // 添加调试日志
+        console.log('开始初始化折叠状态，所有根节点:', treeData.children.map(node => ({
+            id: node.id,
+            label: node.label,
+            collapsed: node.collapsed
+        })));
+
+        // 首先确保所有根节点可见
+        treeData.children.forEach(rootData => {
+            const rootNode = graph.findById(rootData.id);
+            if (rootNode) {
+                graph.showItem(rootNode);
+                // 显示连接到根节点的边
+                graph.getEdges().forEach(edge => {
+                    if (edge.getSource().get('id') === rootData.id) {
+                        graph.showItem(edge);
+                    }
+                });
+            }
+        });
+
         const hideNode = (rootNode) => {
             const queue = [rootNode];
             const processedNodes = new Set();
@@ -372,37 +393,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const nodeModel = node.getModel();
                 processedNodes.add(nodeModel.id);
 
-                // 确保根节点始终可见
-                if (!node.get('parent')) {
-                    graph.showItem(node);
-                }
-
                 if (nodeModel.children) {
                     nodeModel.children.forEach(childData => {
                         const childNode = graph.findById(childData.id);
                         if (childNode) {
-                            // 检查是否是IP地址或数字开头的域名
-                            const isIpOrNumeric = /^\d/.test(nodeModel.id);
-
-                            if (nodeModel.collapsed && !isIpOrNumeric) {
-                                // 只有非IP/数字开头的域名才隐藏子节点
-                                graph.hideItem(childNode);
-                                // 隐藏连接到这个节点的边
-                                graph.getEdges().forEach(edge => {
-                                    if (edge.getTarget().get('id') === childData.id) {
-                                        graph.hideItem(edge);
-                                    }
-                                });
-                            } else {
-                                // IP地址或数字开头的域名，或未折叠的节点，显示其子节点
-                                graph.showItem(childNode);
-                                // 显示连接到这个节点的边
-                                graph.getEdges().forEach(edge => {
-                                    if (edge.getTarget().get('id') === childData.id) {
-                                        graph.showItem(edge);
-                                    }
-                                });
-                            }
+                            // 显示所有子节点
+                            graph.showItem(childNode);
+                            // 显示连接到子节点的边
+                            graph.getEdges().forEach(edge => {
+                                if (edge.getTarget().get('id') === childData.id) {
+                                    graph.showItem(edge);
+                                }
+                            });
 
                             if (childData.children) {
                                 queue.push(childNode);
@@ -417,15 +419,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
-                // 检查是否是IP地址或数字开头的域名
-                const isIpOrNumeric = /^\d/.test(rootData.id);
-
-                // 如果是IP地址或数字开头的域名，设置为展开状态
-                if (isIpOrNumeric) {
-                    rootNode.getModel().collapsed = false;
-                }
-
-                graph.showItem(rootNode); // 确保根节点可见
+                // 设置所有根节点为展开状态
+                rootNode.getModel().collapsed = false;
                 hideNode(rootNode);
             }
         });
@@ -436,7 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             label: node.get('model').label,
             visible: !node.get('visible'),
             collapsed: node.get('model').collapsed,
-            isIpOrNumeric: /^\d/.test(node.get('id'))
+            parent: node.get('parent')?.get('id')
         })));
     };
 
@@ -878,7 +873,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 移除当前节点
                         graph.removeItem(item);
                     } else {
-                        // 删除域名或日期下���所有记录
+                        // 删除域名或日期下所有记录
                         const deletePromises = [];
                         const collectUrlsToDelete = (rootNode) => {
                             const queue = [rootNode];
@@ -1008,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                 }
                                             });
                                         }
-                                        // 将父节点的折叠状态传���给子节点
+                                        // 将父节点的折叠状态传给子节点
                                         queue.push({
                                             node: childNode,
                                             parentCollapsed: isCurrentNodeCollapsed || parentCollapsed
