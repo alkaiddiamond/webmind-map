@@ -5,6 +5,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isDarkTheme = false;
     let historyItems = [];
 
+    // 查找第一个可用的URL
+    const findFirstUrl = (node) => {
+        if (node.url) return node.url;
+        if (node.children && node.children.length > 0) {
+            for (const child of node.children) {
+                const url = findFirstUrl(child);
+                if (url) return url;
+            }
+        }
+        return null;
+    };
+
     // 主题切换函数
     const toggleTheme = () => {
         isDarkTheme = !isDarkTheme;
@@ -40,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 获取根域名的函数
     const getRootDomain = (hostname) => {
-        // 检查是否是IP地址（包括IPv4和IPv6）
+        // 检查是否是IP地址（���括IPv4和IPv6）
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
@@ -186,7 +198,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
                 const iconSpace = 24; // 所有节点都预留图标空间
-                const width = Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400);
+                const maxTextWidth = 300; // 限制文本最大宽度
+                const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
+
+                // 获取favicon URL
+                let faviconUrl = '';
+                if (isLeaf && cfg.url) {
+                    faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
+                } else if (children && children.length > 0) {
+                    const firstUrl = findFirstUrl(children[0]);
+                    if (firstUrl) {
+                        faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
+                    }
+                }
+
+                // 计算文本是否需要截断
+                const availableTextWidth = width - 24 - buttonSpace - (faviconUrl ? iconSpace : 0);
+                let displayText = cfg.label;
+                if (textWidth > availableTextWidth) {
+                    // 计算能显示的字符数
+                    let start = 0;
+                    let end = displayText.length;
+                    let mid;
+                    while (start < end) {
+                        mid = Math.floor((start + end + 1) / 2);
+                        const truncatedText = displayText.slice(0, mid) + '...';
+                        const truncatedWidth = context.measureText(truncatedText).width;
+                        if (truncatedWidth <= availableTextWidth) {
+                            start = mid;
+                        } else {
+                            end = mid - 1;
+                        }
+                    }
+                    displayText = displayText.slice(0, start) + '...';
+                }
 
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
@@ -235,29 +280,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'glass-highlight'
                 });
 
-                // 查找第一个可用的URL
-                const findFirstUrl = (node) => {
-                    if (node.url) return node.url;
-                    if (node.children && node.children.length > 0) {
-                        for (const child of node.children) {
-                            const url = findFirstUrl(child);
-                            if (url) return url;
-                        }
-                    }
-                    return null;
-                };
-
-                // 获取favicon URL
-                let faviconUrl = '';
-                if (isLeaf && cfg.url) {
-                    faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
-                } else if (children && children.length > 0) {
-                    const firstUrl = findFirstUrl(children[0]);
-                    if (firstUrl) {
-                        faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
-                    }
-                }
-
                 // 添加favicon
                 if (faviconUrl) {
                     group.addShape('image', {
@@ -276,7 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 绘制文本
                 group.addShape('text', {
                     attrs: {
-                        text: cfg.label,
+                        text: displayText,
                         x: faviconUrl ? 36 : 12,
                         y: height / 2,
                         fontSize: 13,
@@ -288,6 +310,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     },
                     name: 'label'
                 });
+
+                // 如果文本被截断，添加完整文本的title提示
+                if (displayText !== cfg.label) {
+                    group.addShape('text', {
+                        attrs: {
+                            text: cfg.label,
+                            opacity: 0
+                        },
+                        name: 'title'
+                    });
+                }
 
                 // 如果不是叶子节点，添加展开/折叠图标
                 if (!isLeaf && children && children.length) {
@@ -408,7 +441,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
                     const iconSpace = 24; // 所有节点都预留图标空间
-                    return Math.min(Math.max(textWidth + 24 + buttonSpace + iconSpace, 180), 400);
+                    const maxTextWidth = 300; // 限制文本最大宽度
+                    return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
                 },
                 getVGap: (node) => {
                     const model = node.getModel ? node.getModel() : node;
@@ -677,7 +711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const nodeModel = node.getModel();
                         if (!nodeModel.collapsed) {
                             expandedNodeIds.add(nodeModel.id);
-                            // 如果是展开的节点，其父节点也��该是展开的
+                            // 如果是展开节点，其父节点也该是展开的
                             const parentNode = graph.findById(node.get('parent'));
                             if (parentNode) {
                                 expandedParentIds.add(parentNode.get('id'));
@@ -782,7 +816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 newCollapsedState: collapsed
             });
 
-            // 更新展开/折叠���标
+            // 更新展开/折叠标
             const group = item.getContainer();
             const icon = group.find(element => element.get('name') === 'collapse-text');
             if (icon) {
