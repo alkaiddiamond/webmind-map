@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
-        // ��是IP地址，直接返回完整地址
+        // ��果是IP地址，直接返回完整地址
         if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
             console.log('识别为IP地址:', hostname);
             return hostname;
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const urlStr = item.url.toLowerCase();
                 console.log('正在处理URL:', urlStr);
 
-                // 修改正则���达式以更好地处理数字开头的域名和IP地址
+                // 修改正���表达式以更好地处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // 移除可能的端口号和空格（确保再次检查）
+                // 移除可能的端口号和空格（确保再次查）
                 hostname = hostname.split(':')[0].trim();
                 console.log('处理后的域名:', hostname);
 
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 检查是否是特殊顶级域名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
-                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域名
+                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域���
                             rootDomain = parts.slice(-3).join('.');
                         } else {
                             // 使用最后两部分作为根域名（如 bilibili.com）
@@ -568,7 +568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
 
-                // 选��颜色方案
+                // 选择颜色方案
                 let colorScheme;
                 if (cfg.id === 'root') {
                     colorScheme = colorSchemes.root;
@@ -818,7 +818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             parent: node.get('parent')?.get('id')
         })));
 
-        // 确保所有根节点都可见
+        // 确保所有根节点都见
         graph.getNodes().forEach(node => {
             if (!node.get('parent')) {
                 graph.showItem(node);
@@ -887,7 +887,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                             });
 
-                            // 保持子节点的折叠状态
+                            // 保子节点的折叠状态
                             if (childNode.getModel().collapsed) {
                                 // 如果子节点是折叠状态，确保其子节点保持藏
                                 const hideCollapsedChildren = (node) => {
@@ -944,7 +944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 删除单个页面记录
                         await chrome.history.deleteUrl({ url: model.url });
 
-                        // 更新父节点数据
+                        // 更父节点数据
                         const parentNode = graph.findById(item.get('parent'));
                         if (parentNode) {
                             const parentModel = parentNode.getModel();
@@ -1232,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const queryLower = query.toLowerCase();
         console.log('开始搜索:', queryLower);
 
-        // 存储所有���配的节点和它们的路径
+        // 存储所有匹配的节点和它们的路径
         const matchedPaths = [];
 
         // 递归搜索函数
@@ -1267,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        console.log('找到匹配路径数:', matchedPaths.length);
+        console.log('找到匹配径数:', matchedPaths.length);
 
         // 如果没有匹配结果，直接返回
         if (matchedPaths.length === 0) {
@@ -1387,9 +1387,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 获取节点的大小信息
         const bbox = node.getBBox();
+        const group = node.get('group');
+
+        // 清除之前的焦点样式
+        const oldFocus = group.findAll(element => element.get('name') === 'search-focus');
+        oldFocus.forEach(shape => shape.remove());
 
         // 添加焦点样式
-        node.get('group').addShape('rect', {
+        group.addShape('rect', {
             attrs: {
                 x: 0,
                 y: 0,
@@ -1405,13 +1410,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             name: 'search-focus'
         });
 
-        // 立即将节点移动到视图中心
+        // 使用 G6 的 focusItem 方法来定位节点
         graph.focusItem(node, true, {
             easing: 'easeCubic',
             duration: 300,
-            padding: [20, 20, 20, 20]
+            padding: [50, 50, 50, 50]
         });
 
+        // 更新搜索信息
         updateSearchInfo();
     }
 
