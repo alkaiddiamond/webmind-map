@@ -1,0 +1,96 @@
+:root {
+  --bg-gradient-light: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+  --bg-gradient-dark: linear-gradient(120deg, #20232a 0%, #414850 100%);
+  --glass-bg-light: rgba(255, 255, 255, 0.25);
+  --glass-bg-dark: rgba(0, 0, 0, 0.25);
+  --glass-border-light: rgba(255, 255, 255, 0.18);
+  --glass-border-dark: rgba(255, 255, 255, 0.08);
+  --text-color-light: #333;
+  --text-color-dark: #fff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+body.dark-theme {
+  color: var(--text-color-dark);
+}
+
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-gradient-light);
+  transition: background 0.3s ease;
+  z-index: -1;
+}
+
+.dark-theme .background {
+  background: var(--bg-gradient-dark);
+}
+
+.controls {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-light);
+}
+
+.dark-theme .controls {
+  background: var(--glass-bg-dark);
+  border-color: var(--glass-border-dark);
+}
+
+select,
+button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border-light);
+  background: var(--glass-bg-light);
+  color: var(--text-color-light);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dark-theme select,
+.dark-theme button {
+  background: var(--glass-bg-dark);
+  border-color: var(--glass-border-dark);
+  color: var(--text-color-dark);
+}
+
+select:hover,
+button:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.dark-theme select:hover,
+.dark-theme button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+#container {
+  width: 100%;
+  height: calc(100vh - 20px);
+  padding-top: 60px;
+  box-sizing: border-box;
+}

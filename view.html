@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>浏览历史思维导图</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="lib/g6.min.js"></script>
+  </head>
+  <body>
+    <div class="background"></div>
+    <div class="controls">
+      <select id="groupBy">
+        <option value="domain">按域名分组</option>
+        <option value="date">按日期分组</option>
+      </select>
+      <button id="themeToggle">切换主题</button>
+    </div>
+    <div id="container"></div>
+    <script src="view.js"></script>
+  </body>
+</html>
