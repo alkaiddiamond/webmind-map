@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchPrev = document.getElementById('searchPrev');
     const searchNext = document.getElementById('searchNext');
     const searchInfo = document.getElementById('searchInfo');
+    const languageSelect = document.getElementById('language');
+
+    // 初始化语言选择器
+    languageSelect.value = getCurrentLanguage();
 
     let graph = null;
     let isDarkTheme = false;
@@ -13,6 +17,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentSearchIndex = -1;
     let treeDataCache = null;
     let allNodes = [];
+
+    // 更新界面文本
+    function updateUIText(skipViewUpdate = false) {
+        document.title = t('title');
+        groupBySelect.innerHTML = `
+            <option value="domain">${t('groupByDomain')}</option>
+            <option value="date">${t('groupByDate')}</option>
+        `;
+        themeToggle.textContent = t('toggleTheme');
+        searchInput.placeholder = t('searchPlaceholder');
+        searchButton.title = t('searchButton');
+        searchPrev.title = t('prevMatch');
+        searchNext.title = t('nextMatch');
+
+        // 只有在需要时且图已初始化的情况下才更新视图
+        if (!skipViewUpdate && typeof graph !== 'undefined' && graph !== null) {
+            updateView();
+        }
+    }
+
+    // 监听语言变化
+    languageSelect.addEventListener('change', (e) => {
+        setLanguage(e.target.value);
+        updateUIText();
+    });
+
+    window.addEventListener('languageChanged', () => {
+        updateUIText();
+    });
+
+    // 初始化界面文本（跳过视图更新）
+    updateUIText(true);
 
     // 查找第一个可用的URL
     const findFirstUrl = (node) => {
@@ -73,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 如果域名不包含点号或者是localhost，直接返回
+        // 如果域名不包含点号或者是localhost，直��返回
         if (!hostname.includes('.') || hostname === 'localhost') {
             console.log('识别为本地地址:', hostname);
             return hostname;
@@ -267,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }))
                 });
             } catch (e) {
-                console.error('处理URL时出错:', {
+                console.error('处理URL时出���:', {
                     url: item.url,
                     title: item.title,
                     error: e.message,
@@ -280,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 如果有无法解析的 URL，添加 "其他" 分组
         if (otherGroup.totalCount > 0) {
-            groups['其他'] = otherGroup;
+            groups[t('other')] = otherGroup;
         }
 
         // 打印最终分组结果
@@ -326,7 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let treeData = {
             id: 'root',
-            label: '浏览历史',
+            label: t('title'),
             children: [],
             collapsed: false
         };
@@ -495,7 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 添加调试日志
+        // 添加��试日志
         console.log('初始化折叠状态后的节点状态:', graph.getNodes().map(node => ({
             id: node.get('id'),
             label: node.get('model').label,
@@ -807,7 +843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         treeDataCache = treeData;  // 缓存树形数据
         console.log('构建的树形数据:', treeData);
 
-        // 加载数据并初始化
+        // 加载数据初始化
         graph.data(treeData);
         graph.render();
 
@@ -934,7 +970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 处理删除按钮点击
             if (targetName === 'delete-button' || targetName === 'delete-box') {
-                const confirmDelete = confirm('确定要删除这条历史记录吗？');
+                const confirmDelete = confirm(t('deleteConfirm'));
                 if (!confirmDelete) return;
 
                 try {
@@ -960,7 +996,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 label: newLabel
                             });
 
-                            // 如果节点没有子节点了，也删除父节点
+                            // 如果节点没有子节点了，删除父��点
                             if (count === 0) {
                                 const grandParentNode = graph.findById(parentNode.get('parent'));
                                 if (grandParentNode) {
@@ -1131,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 } catch (error) {
                     console.error('Error deleting history:', error);
-                    alert('删除历史记录失败');
+                    alert(t('deleteError'));
                 }
                 return;
             }
@@ -1446,7 +1482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // 计算合适的缩放级别
-        const padding = 100;  // 边距
+        const padding = 100;  // 距
         const viewportWidth = graph.get('width');
         const viewportHeight = graph.get('height');
         const contentWidth = maxX - minX + padding * 2;
@@ -1516,9 +1552,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateSearchInfo() {
         if (searchResults.length === 0) {
-            searchInfo.textContent = '无匹配';
+            searchInfo.textContent = t('noMatch');
         } else {
-            searchInfo.textContent = `${currentSearchIndex + 1}/${searchResults.length}`;
+            searchInfo.textContent = t('matchCount', {
+                current: currentSearchIndex + 1,
+                total: searchResults.length
+            });
         }
     }
 
@@ -1549,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('container');
         if (container) {
             container.innerHTML = `<div style="color: red; padding: 20px;">
-                加载出错: ${error.message}
+                ${t('loadError', { error: error.message })}
             </div>`;
         }
     }

@@ -15,7 +15,8 @@ body {
   padding: 0;
   width: 100%;
   height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   overflow: hidden;
 }
 
@@ -38,7 +39,7 @@ body.dark-theme {
   background: var(--bg-gradient-dark);
 }
 
-.controls {
+.left-controls {
   position: fixed;
   top: 10px;
   left: 10px;
@@ -53,7 +54,23 @@ body.dark-theme {
   border: 1px solid var(--glass-border-light);
 }
 
-.dark-theme .controls {
+.right-controls {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-light);
+}
+
+.dark-theme .left-controls,
+.dark-theme .right-controls {
   background: var(--glass-bg-dark);
   border-color: var(--glass-border-dark);
 }
@@ -99,17 +116,24 @@ button:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 16px;
 }
 
 #searchInput {
   padding: 6px 12px;
-  border: 1px solid #64748b;
+  border: 1px solid var(--glass-border-light);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
+  background: var(--glass-bg-light);
+  color: var(--text-color-light);
   font-size: 14px;
   width: 200px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dark-theme #searchInput {
+  background: var(--glass-bg-dark);
+  border-color: var(--glass-border-dark);
+  color: var(--text-color-dark);
 }
 
 #searchInput::placeholder {
@@ -117,25 +141,47 @@ button:hover {
 }
 
 #searchPrev,
-#searchNext {
+#searchNext,
+#searchButton {
   padding: 6px 12px;
-  border: 1px solid #64748b;
+  border: 1px solid var(--glass-border-light);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
+  background: var(--glass-bg-light);
+  color: var(--text-color-light);
   cursor: pointer;
   font-size: 14px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dark-theme #searchPrev,
+.dark-theme #searchNext,
+.dark-theme #searchButton {
+  background: var(--glass-bg-dark);
+  border-color: var(--glass-border-dark);
+  color: var(--text-color-dark);
 }
 
 #searchPrev:hover,
-#searchNext:hover {
-  background: rgba(255, 255, 255, 0.2);
+#searchNext:hover,
+#searchButton:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.dark-theme #searchPrev:hover,
+.dark-theme #searchNext:hover,
+.dark-theme #searchButton:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 #searchInfo {
-  color: #94a3b8;
+  color: var(--text-color-light);
   font-size: 14px;
   min-width: 80px;
+}
+
+.dark-theme #searchInfo {
+  color: var(--text-color-dark);
 }
 
 /* 高亮匹配的节点 */
@@ -148,18 +194,4 @@ button:hover {
   stroke: #f59e0b !important;
   stroke-width: 3px !important;
   filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
-}
-
-#searchButton {
-  padding: 6px 12px;
-  border: 1px solid #64748b;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-#searchButton:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
