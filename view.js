@@ -141,13 +141,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let hostname;
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
-                console.log('��在处理URL:', urlStr);
+                console.log('处理URL:', urlStr);
 
-                // 修改正表达式以更好地处理数字开头的域名和IP地址
+                // 修改正则表达式以更好地处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
-                    // 如果包含端口号，去除端口号
+                    // 移除可能的端口号和空格（确保再次查）
                     hostname = hostname.split(':')[0];
                     console.log('正则提取域名成功:', hostname, '原始URL:', urlStr);
                 } else {
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // 移除可能的端口号和空格（确保再次查）
+                // 除可能的端口号和空格（确保再次查）
                 hostname = hostname.split(':')[0].trim();
                 console.log('处理后的域名:', hostname);
 
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 groups[rootDomain].totalCount++;
 
                 // 添加调试日志
-                console.log('添加记��后的分组状态:', {
+                console.log('添加记录后的分组状态:', {
                     rootDomain,
                     hostname,
                     totalCount: groups[rootDomain].totalCount,
@@ -654,11 +654,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-                // 如果不叶子节点，添加展开/折叠图标
+                // 如果不是叶子节点，添加展开/折叠图标
                 if (!isLeaf && children && children.length) {
                     const iconBox = group.addShape('circle', {
                         attrs: {
-                            x: width - 52, // 调整展开按钮位置
+                            x: width - 52,
                             y: height / 2,
                             r: 12,
                             fill: colorScheme.fill,
@@ -671,7 +671,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     group.addShape('text', {
                         attrs: {
-                            x: width - 52, // 调整展开按钮文字位置
+                            x: width - 52,
                             y: height / 2,
                             text: collapsed ? '+' : '-',
                             fontSize: 16,
@@ -680,6 +680,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             textAlign: 'center',
                             textBaseline: 'middle',
                             cursor: 'pointer',
+                            dy: 1
                         },
                         name: 'collapse-text'
                     });
@@ -688,7 +689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 添加删除按钮
                 group.addShape('circle', {
                     attrs: {
-                        x: width - 24, // 保持删除按钮位置不变
+                        x: width - 24,
                         y: height / 2,
                         r: 12,
                         fill: colorScheme.fill,
@@ -701,7 +702,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 group.addShape('text', {
                     attrs: {
-                        x: width - 24, // 保持删除按钮文字位置不变
+                        x: width - 24,
                         y: height / 2,
                         text: '×',
                         fontSize: 16,
@@ -710,6 +711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         textAlign: 'center',
                         textBaseline: 'middle',
                         cursor: 'pointer',
+                        dy: 1
                     },
                     name: 'delete-button'
                 });
@@ -755,7 +757,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             defaultEdge: {
                 type: 'cubic-horizontal',
                 style: {
-                    stroke: '#91d5ff',
+                    stroke: 'rgb(143,115,243)',
                 }
             },
             layout: {
@@ -1058,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? groupByDomain(historyItems)
                         : groupByDate(historyItems);
 
-                    // 恢复节点的展��状态
+                    // 恢复节点的展开状态
                     const restoreExpandState = (treeData) => {
                         if (treeData.children) {
                             treeData.children.forEach(node => {
@@ -1149,12 +1151,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 newCollapsedState: collapsed
             });
 
-            // 更新展开/折叠标
+            // 更新展开/折叠图标
             const group = item.getContainer();
             const icon = group.find(element => element.get('name') === 'collapse-text');
             if (icon) {
                 icon.attr('text', collapsed ? '+' : '-');
-                console.log('图标更新为:', collapsed ? '+' : '-');
+                console.log('图标更新为:', collapsed ? '展开' : '折叠');
             }
 
             // 处理子节点显示/隐藏
@@ -1328,7 +1330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 graph.paint();
             }
 
-            // 如果还有更���的层级，继续展开
+            // 如果还有更深的层级，继续展开
             if (depth < maxDepth) {
                 setTimeout(() => {
                     expandNodesAtDepth(depth + 1);
