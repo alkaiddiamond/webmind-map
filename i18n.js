@@ -1,6 +1,6 @@
 const i18n = {
     'zh': {
-        title: '浏览历史思维导图',
+        title: 'WebMind Map',
         groupByDomain: '按域名分组',
         groupByDate: '按日期分组',
         toggleTheme: '切换主题',
@@ -17,7 +17,7 @@ const i18n = {
         language: '语言'
     },
     'en': {
-        title: 'Browsing History Mind Map',
+        title: 'WebMind Map',
         groupByDomain: 'Group by Domain',
         groupByDate: 'Group by Date',
         toggleTheme: 'Toggle Theme',

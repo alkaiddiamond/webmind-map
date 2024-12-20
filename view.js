@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hostname = hostname.split(':')[0].trim();
                 console.log('处理后的域名:', hostname);
 
-                // ��果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
+                // ���果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     console.log('特殊协议域名:', rootDomain);
@@ -389,8 +389,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const entries = Object.entries(groups);
             console.log('域名分组条目数:', entries.length);
 
-            // 按照访问量降序排序
-            entries.sort((a, b) => b[1].totalCount - a[1].totalCount);
+            // 按照域名首字母排序
+            entries.sort((a, b) => {
+                // 特殊处理"其他"分组，始终放在最后
+                if (a[0] === t('other')) return 1;
+                if (b[0] === t('other')) return -1;
+                // 其他情况按照域名字母排序
+                return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+            });
 
             entries.forEach(([rootDomain, domainData]) => {
                 console.log('处理域名分组:', rootDomain, {
@@ -811,7 +817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
                     const iconSpace = 24; // 所有节点都预留图标空间
-                    const maxTextWidth = 300; // 限制文本最大宽度
+                    const maxTextWidth = 300; // 限��文本最大宽度
                     return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
                 },
                 getVGap: (node) => {
@@ -848,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         graph.render();
 
         // 添加调试日志
-        console.log('渲染后的节点数量:', graph.getNodes().length);
+        console.log('渲染后的节点数��:', graph.getNodes().length);
         console.log('渲染后的节点列表:', graph.getNodes().map(node => ({
             id: node.get('id'),
             label: node.get('model').label,
@@ -988,7 +994,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const parentModel = parentNode.getModel();
                             // 从父节点的children中移除当前节点
                             parentModel.children = parentModel.children.filter(child => child.id !== model.id);
-                            // 更新父节点显示的数
+                            // 更新父节��显示的数
                             const count = parentModel.children.length;
                             const newLabel = parentModel.label.replace(/\(\d+\)/, `(${count})`);
                             graph.updateItem(parentNode, {

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "浏览历史思维导图",
+  "name": "WebMind Map",
   "version": "1.0",
   "description": "将浏览历史以思维导图的形式展示",
   "permissions": [
@@ -9,7 +9,7 @@
     "favicon"
   ],
   "action": {
-    "default_title": "浏览历史思维导图"
+    "default_title": "WebMind Map"
   },
   "background": {
     "service_worker": "background.js"
