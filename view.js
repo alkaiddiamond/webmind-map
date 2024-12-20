@@ -97,21 +97,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 获取根域名的函数
     const getRootDomain = (hostname) => {
-        console.log('getRootDomain 输入:', hostname);
-
         // 检查是否是IP地址（包括IPv4和IPv6）
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
         // 果是IP地址，直接返回完整地址
         if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
-            console.log('识别为IP地址:', hostname);
             return hostname;
         }
 
-        // 如果域名不包含点号或者是localhost，直��返回
+        // 如果域名不包含点号或者是localhost，直返回
         if (!hostname.includes('.') || hostname === 'localhost') {
-            console.log('识别为本地地址:', hostname);
             return hostname;
         }
 
@@ -119,7 +115,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (/^\d/.test(hostname)) {
             // 如果看起来像IP地址格式，直接返回
             if (hostname.split('.').every(part => !isNaN(part))) {
-                console.log('识别为类IP格式:', hostname);
                 return hostname;
             }
         }
@@ -135,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 如果只有两部分，直接返回完整域名
         if (parts.length <= 2) {
-            console.log('返回双段域名:', hostname);
             return hostname;
         }
 
@@ -143,15 +137,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lastTwoParts = parts.slice(-2).join('.');
         if (specialDomains[lastTwoParts]) {
             // 如果是特顶级域名，返回后三部分
-            const result = parts.slice(-3).join('.');
-            console.log('返回特殊域名:', result);
-            return result;
+            return parts.slice(-3).join('.');
         }
 
         // 对于其他情况，返回最后两部分
-        const result = parts.slice(-2).join('.');
-        console.log('返回标准域名:', result);
-        return result;
+        return parts.slice(-2).join('.');
     };
 
     // 按域名分组
@@ -164,20 +154,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             totalCount: 0
         };
 
-        // 打印所有历史记录的 URL
-        console.log('所有历史记录:', items.map(item => ({
-            url: item.url,
-            title: item.title,
-            id: item.id,
-            lastVisitTime: new Date(item.lastVisitTime).toLocaleString()
-        })));
-
         items.forEach(item => {
             try {
                 let hostname;
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
-                console.log('处理URL:', urlStr);
 
                 // 修改正则表达式以更好地处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
@@ -185,34 +166,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     hostname = domainMatch[1].toLowerCase().trim();
                     // 移除可能的端口号和空格（确保再次查）
                     hostname = hostname.split(':')[0];
-                    console.log('正则提取域名成功:', hostname, '原始URL:', urlStr);
                 } else {
                     // 如果正则匹配失败，尝试使用 URL 对象
                     try {
                         const url = new URL(urlStr);
                         hostname = url.hostname;
-                        console.log('URL对象提取域名成功:', hostname, '原始URL:', urlStr);
                     } catch (e) {
-                        console.log('URL解析失败:', e.message, '原始URL:', urlStr);
                         hostname = null;
                     }
                 }
 
                 if (!hostname) {
-                    console.log('无法获取域名，放入其他组:', urlStr);
                     otherGroup.subdomains['other'].push(item);
                     otherGroup.totalCount++;
                     return;
                 }
 
-                // 除可能的端口号和空格（确保再次查）
+                // 除可能的端���号和空格（确保再次查）
                 hostname = hostname.split(':')[0].trim();
-                console.log('处理后的域名:', hostname);
 
-                // ���果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
+                // 果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
-                    console.log('特殊协议域名:', rootDomain);
                     if (!groups[rootDomain]) {
                         groups[rootDomain] = {
                             subdomains: {},
@@ -234,11 +209,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 如果是IP地址或者以数字开头
                 if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
-                    console.log('IP地址:', hostname);
                     rootDomain = hostname;
                 } else if (!hostname.includes('.') || hostname === 'localhost') {
                     // 如果是本地地址
-                    console.log('本地地址:', hostname);
                     rootDomain = hostname;
                 } else {
                     // 处理域名
@@ -266,17 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             rootDomain = parts.slice(-2).join('.');
                         }
                     }
-
-                    // 添加调试日志
-                    console.log('域名处理:', {
-                        original: hostname,
-                        parts: parts,
-                        rootDomain: rootDomain,
-                        isSpecialDomain: specialDomains[parts.slice(-2).join('.')]
-                    });
                 }
-
-                console.log('获取到根域名:', rootDomain);
 
                 if (!groups[rootDomain]) {
                     groups[rootDomain] = {
@@ -291,24 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 groups[rootDomain].subdomains[hostname].push(item);
                 groups[rootDomain].totalCount++;
-
-                // 添加调试日志
-                console.log('添加记录后的分组状态:', {
-                    rootDomain,
-                    hostname,
-                    totalCount: groups[rootDomain].totalCount,
-                    items: groups[rootDomain].subdomains[hostname].map(i => ({
-                        url: i.url,
-                        title: i.title
-                    }))
-                });
-            } catch (e) {
-                console.error('处理URL时出���:', {
-                    url: item.url,
-                    title: item.title,
-                    error: e.message,
-                    stack: e.stack
-                });
+            } catch (error) {
                 otherGroup.subdomains['other'].push(item);
                 otherGroup.totalCount++;
             }
@@ -318,26 +264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (otherGroup.totalCount > 0) {
             groups[t('other')] = otherGroup;
         }
-
-        // 打印最终分组结果
-        console.log('域名分组结果:', {
-            groups: Object.keys(groups).map(domain => ({
-                domain,
-                totalCount: groups[domain].totalCount,
-                subdomains: Object.keys(groups[domain].subdomains),
-                urls: Object.values(groups[domain].subdomains).flat().map(item => ({
-                    url: item.url,
-                    title: item.title,
-                    id: item.id
-                }))
-            })),
-            otherGroupCount: otherGroup.totalCount,
-            otherUrls: otherGroup.subdomains['other'].map(item => ({
-                url: item.url,
-                title: item.title,
-                id: item.id
-            }))
-        });
 
         return groups;
     };
@@ -358,8 +284,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 构建树形数据
     const buildTreeData = (groups) => {
-        console.log('构建树形数��时的分组:', Object.keys(groups));
-
         let treeData = {
             id: 'root',
             label: t('title'),
@@ -387,7 +311,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             // 域名分组的处理
             const entries = Object.entries(groups);
-            console.log('域名分组条目数:', entries.length);
 
             // 按照域名首字母排序
             entries.sort((a, b) => {
@@ -399,11 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             entries.forEach(([rootDomain, domainData]) => {
-                console.log('处理域名分组:', rootDomain, {
-                    totalCount: domainData.totalCount,
-                    subdomains: Object.keys(domainData.subdomains)
-                });
-
                 const rootNode = {
                     id: rootDomain,
                     label: `${rootDomain} (${domainData.totalCount})`,
@@ -452,23 +370,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        console.log('最终构建的树形数据:', {
-            totalNodes: treeData.children.length,
-            domains: treeData.children.map(node => node.label)
-        });
-
         return treeData;
     };
 
     // 初始折叠状态
     const initializeCollapsedState = (graph, treeData) => {
-        // 添加调试日志
-        console.log('开始初始化折叠状态，所��根节点:', treeData.children.map(node => ({
-            id: node.id,
-            label: node.label,
-            collapsed: node.collapsed
-        })));
-
         // 首先确保有节点见
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
@@ -536,15 +442,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 processNodeState(rootNode);
             }
         });
-
-        // 添加��试日志
-        console.log('初始化折叠状态后的节点状态:', graph.getNodes().map(node => ({
-            id: node.get('id'),
-            label: node.get('model').label,
-            visible: !node.get('visible'),
-            collapsed: node.get('model').collapsed,
-            parent: node.get('parent')?.get('id')
-        })));
     };
 
     // 更新视图
@@ -817,7 +714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
                     const iconSpace = 24; // 所有节点都预留图标空间
-                    const maxTextWidth = 300; // 限��文本最大宽度
+                    const maxTextWidth = 300; // 限制文本最大宽度
                     return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
                 },
                 getVGap: (node) => {
@@ -847,20 +744,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const treeData = buildTreeData(groups);
         treeDataCache = treeData;  // 缓存树形数据
-        console.log('构建的树形数据:', treeData);
 
         // 加载数据初始化
         graph.data(treeData);
         graph.render();
-
-        // 添加调试日志
-        console.log('渲染后的节点数��:', graph.getNodes().length);
-        console.log('渲染后的节点列表:', graph.getNodes().map(node => ({
-            id: node.get('id'),
-            label: node.get('model').label,
-            visible: !node.get('visible'),
-            parent: node.get('parent')?.get('id')
-        })));
 
         // 确保所有根节点都见
         graph.getNodes().forEach(node => {
@@ -881,12 +768,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 处理节点的显示/隐藏
         const processChildren = (node, isCollapsed) => {
             const nodeModel = node.getModel();
-            console.log('处理节点展开/折叠:', {
-                nodeId: nodeModel.id,
-                label: nodeModel.label,
-                isCollapsed,
-                hasChildren: nodeModel.children ? nodeModel.children.length : 0
-            });
 
             if (nodeModel.children) {
                 // 只处理当前节点的直接子节点
@@ -964,16 +845,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const model = item.getModel();
             const targetName = target.get('name');
 
-            console.log('节点点击事件:', {
-                nodeId: model.id,
-                label: model.label,
-                isLeaf: model.isLeaf,
-                isSubdomain: model.isSubdomain,
-                targetName,
-                currentCollapsed: model.collapsed,
-                hasChildren: model.children ? model.children.length : 0
-            });
-
             // 处理删除按钮点击
             if (targetName === 'delete-button' || targetName === 'delete-box') {
                 const confirmDelete = confirm(t('deleteConfirm'));
@@ -994,7 +865,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const parentModel = parentNode.getModel();
                             // 从父节点的children中移除当前节点
                             parentModel.children = parentModel.children.filter(child => child.id !== model.id);
-                            // 更新父节��显示的数
+                            // 更新父节点显示的数
                             const count = parentModel.children.length;
                             const newLabel = parentModel.label.replace(/\(\d+\)/, `(${count})`);
                             graph.updateItem(parentNode, {
@@ -1002,7 +873,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 label: newLabel
                             });
 
-                            // 如果节点没有子节点了，删除父��点
+                            // 如果节点没有子节点了，删除父节点
                             if (count === 0) {
                                 const grandParentNode = graph.findById(parentNode.get('parent'));
                                 if (grandParentNode) {
@@ -1188,17 +1059,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             model.collapsed = !model.collapsed;
             const collapsed = model.collapsed;
 
-            console.log('开/折叠状态更新:', {
-                nodeId: model.id,
-                newCollapsedState: collapsed
-            });
-
             // 更新展开/折叠图标
             const group = item.getContainer();
             const icon = group.find(element => element.get('name') === 'collapse-text');
             if (icon) {
                 icon.attr('text', collapsed ? '+' : '-');
-                console.log('图标更新为:', collapsed ? '展开' : '折叠');
             }
 
             // 处理子节点显示/隐藏
@@ -1274,7 +1139,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const queryLower = query.toLowerCase();
-        console.log('开始搜索:', queryLower);
 
         // 存储所有匹配的节点和它们的路径
         const matchedPaths = [];
@@ -1288,12 +1152,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 如果当前节点匹配，记录完整路径
             if (isMatched) {
                 matchedPaths.push([...currentPath, nodeData]);
-                console.log('找到匹配节点:', {
-                    id: nodeData.id,
-                    label: nodeData.label,
-                    path: currentPath.map(n => n.label),
-                    depth: currentPath.length
-                });
             }
 
             // 继续搜索子节点，无论是否折叠
@@ -1311,8 +1169,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        console.log('找到匹配径数:', matchedPaths.length);
-
         // 如果没有匹配结果，直接返回
         if (matchedPaths.length === 0) {
             updateSearchInfo();
@@ -1321,11 +1177,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 找到最大深度
         const maxDepth = Math.max(...matchedPaths.map(path => path.length));
-        console.log('最大深度:', maxDepth);
 
         // 按深度逐层展开节点
         function expandNodesAtDepth(depth) {
-            console.log('展开深度', depth, '的节点');
             let hasExpandedNodes = false;
 
             matchedPaths.forEach(path => {
@@ -1388,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchResults = matchedPaths.map(path => {
                 const targetNode = graph.findById(path[path.length - 1].id);
                 if (targetNode) {
-                    // 确保节点可见
+                    // 确保节点可
                     graph.showItem(targetNode);
 
                     // 添加高亮效果
@@ -1572,25 +1426,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error('G6 库未能正确加载');
         }
 
-        console.log('开始初始化扩展...');
-
-        // 获取浏览历史
         historyItems = await chrome.history.search({
             text: '',
             maxResults: 1000,
             startTime: 0
         });
 
-        console.log('获取到历史记录数量:', historyItems.length);
-
-        // 初始化视图
-        console.log('开始初始化视图...');
         updateView();
-        console.log('视图初始化完成');
 
     } catch (error) {
-        console.error('扩展初始化错误:', error);
-        // 在页面上显示错误信息
         const container = document.getElementById('container');
         if (container) {
             container.innerHTML = `<div style="color: red; padding: 20px;">

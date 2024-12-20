@@ -1,0 +1,82 @@
+{
+  "appName": {
+    "message": "WebMind Map",
+    "description": "扩展名称"
+  },
+  "appDesc": {
+    "message": "将浏览历史以思维导图的形式展示",
+    "description": "扩展描述"
+  },
+  "title": {
+    "message": "浏览历史思维导图",
+    "description": "页面标题"
+  },
+  "groupByDomain": {
+    "message": "按域名分组",
+    "description": "域名分组选项"
+  },
+  "groupByDate": {
+    "message": "按日期分组",
+    "description": "日期分组选项"
+  },
+  "toggleTheme": {
+    "message": "切换主题",
+    "description": "主题切换按钮"
+  },
+  "searchPlaceholder": {
+    "message": "搜索历史记录...",
+    "description": "搜索框占位符"
+  },
+  "searchButton": {
+    "message": "搜索",
+    "description": "搜索按钮"
+  },
+  "prevMatch": {
+    "message": "上一个匹配",
+    "description": "上一个匹配按钮"
+  },
+  "nextMatch": {
+    "message": "下一个匹配",
+    "description": "下一个匹配按钮"
+  },
+  "noMatch": {
+    "message": "未找到匹��项",
+    "description": "无匹配结果提示"
+  },
+  "matchCount": {
+    "message": "第 $current$ 个匹配，共 $total$ 个",
+    "description": "匹配计数",
+    "placeholders": {
+      "current": {
+        "content": "$1",
+        "example": "1"
+      },
+      "total": {
+        "content": "$2",
+        "example": "5"
+      }
+    }
+  },
+  "deleteConfirm": {
+    "message": "确定要删除这条历史记录吗？",
+    "description": "删除确认提示"
+  },
+  "deleteError": {
+    "message": "删除历史记录时出错",
+    "description": "删除错误提示"
+  },
+  "loadError": {
+    "message": "加载出错: $error$",
+    "description": "加载错误提示",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Error message"
+      }
+    }
+  },
+  "other": {
+    "message": "其他",
+    "description": "其他分组"
+  }
+} 
