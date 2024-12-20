@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hostname = hostname.split(':')[0].trim();
                 console.log('处理后的域名:', hostname);
 
-                // 如果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
+                // ��果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     console.log('特殊协议域名:', rootDomain);
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 构建树形数据
     const buildTreeData = (groups) => {
-        console.log('构建树形数据时的分组:', Object.keys(groups));
+        console.log('构建树形数��时的分组:', Object.keys(groups));
 
         let treeData = {
             id: 'root',
@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 初始折叠状态
     const initializeCollapsedState = (graph, treeData) => {
         // 添加调试日志
-        console.log('开始初始化折叠状态，所有根节点:', treeData.children.map(node => ({
+        console.log('开始初始化折叠状态，所��根节点:', treeData.children.map(node => ({
             id: node.id,
             label: node.label,
             collapsed: node.collapsed
@@ -573,7 +573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let faviconUrl = '';
                 if (isLeaf && cfg.url) {
                     faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
-                } else if (children && children.length > 0) {
+                } else if (children && children.length > 0 && cfg.id !== 'root') {
                     const firstUrl = findFirstUrl(children[0]);
                     if (firstUrl) {
                         faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
