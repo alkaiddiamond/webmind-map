@@ -126,9 +126,9 @@ button:hover {
 .search-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   width: 100%;
-  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 #searchInput {
@@ -137,7 +137,7 @@ button:hover {
   border-radius: 4px;
   background: var(--glass-bg-light);
   color: var(--text-color-light);
-  font-size: 14px;
+  font-size: 13px;
   width: 200px;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -157,15 +157,20 @@ button:hover {
 #searchPrev,
 #searchNext,
 #searchButton {
-  padding: 6px 12px;
+  padding: 4px 8px;
+  min-width: 32px;
+  height: 28px;
   border: 1px solid var(--glass-border-light);
   border-radius: 4px;
   background: var(--glass-bg-light);
   color: var(--text-color-light);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dark-theme #searchPrev,
@@ -190,8 +195,8 @@ button:hover {
 
 #searchInfo {
   color: var(--text-color-light);
-  font-size: 14px;
-  min-width: 80px;
+  font-size: 13px;
+  min-width: 60px;
 }
 
 .dark-theme #searchInfo {
@@ -269,6 +274,7 @@ button:hover {
 }
 
 #groupBy {
-  width: auto;
+  width: 120px;
   min-width: 120px;
+  max-width: 120px;
 }

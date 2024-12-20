@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalPages = Math.ceil(totalItems / itemsPerPage);
         paginationContainer.innerHTML = '';
 
-        // 如果总页数小于1不显示分页
+        // 如果总页数小于1示分页
         if (totalPages <= 1) {
             paginationContainer.style.display = 'none';
             return;
@@ -56,21 +56,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const endTime = Date.now();
             const startTime = 0;  // 从最早的记录开始
 
-            // 先获取所有历史记录的数量
-            const allHistory = await chrome.history.search({
+            // 获取所有历史记录
+            historyItems = await chrome.history.search({
                 text: '',
-                maxResults: 10000,
+                maxResults: 100000,  // 设置一个足够大的值
                 startTime,
                 endTime
             });
-
-            // 更新分页
-            updatePagination(allHistory.length);
-
-            // ��取当前页的历史记录
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = currentPage * itemsPerPage;
-            historyItems = allHistory.slice(start, end);
 
             // 更新视图
             updateView();
@@ -226,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
 
-                // 修改正则表达式以更好处理数字开头的域名和IP地址
+                // 改正则表达式以更好处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
@@ -334,17 +326,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         return groups;
     };
 
-    // 按日期组
+    // 按日期分组
     const groupByDate = (items) => {
         const groups = {};
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+
+        // 创建最近12个月的日期范围
+        const monthRanges = [];
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(currentYear, currentMonth - i, 1);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            monthRanges.push({ year, month });
+        }
+
         items.forEach(item => {
             const date = new Date(item.lastVisitTime);
-            const dateStr = date.toLocaleDateString();
-            if (!groups[dateStr]) {
-                groups[dateStr] = [];
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+
+            // 检查是否在最近12个月内
+            const isRecent = monthRanges.some(range => range.year === year && range.month === month);
+
+            let groupKey;
+            if (isRecent) {
+                groupKey = `${year}-${month.toString().padStart(2, '0')}`;
+            } else {
+                groupKey = 'earlier';
             }
-            groups[dateStr].push(item);
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    year,
+                    month,
+                    isEarlier: groupKey === 'earlier',
+                    days: {}
+                };
+            }
+
+            if (!groups[groupKey].days[day]) {
+                groups[groupKey].days[day] = [];
+            }
+
+            groups[groupKey].days[day].push(item);
         });
+
         return groups;
     };
 
@@ -358,22 +387,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         if (groupBySelect.value === 'date') {
-            Object.entries(groups).forEach(([groupName, items]) => {
-                const groupNode = {
-                    id: groupName,
-                    label: `${groupName} (${items.length})`,
-                    children: items.map(item => ({
-                        id: String(item.id),
-                        label: item.title || item.url,
-                        url: item.url,
-                        isLeaf: true
-                    })),
+            // 获取所有月份并排序
+            const monthKeys = Object.keys(groups).sort((a, b) => {
+                if (a === 'earlier') return 1;
+                if (b === 'earlier') return -1;
+                return b.localeCompare(a);
+            });
+
+            monthKeys.forEach(monthKey => {
+                const monthData = groups[monthKey];
+                const monthNode = {
+                    id: monthKey,
+                    label: monthData.isEarlier ? '更早' : `${monthData.year}年${monthData.month}月`,
+                    children: [],
                     collapsed: true
                 };
-                treeData.children.push(groupNode);
+
+                // 获取所有日期并排序
+                const days = Object.keys(monthData.days).sort((a, b) => b - a);
+                days.forEach(day => {
+                    const items = monthData.days[day];
+                    const dayNode = {
+                        id: `${monthKey}-day-${day}`,
+                        label: `${day}日 (${items.length})`,
+                        children: items.map(item => ({
+                            id: String(item.id),
+                            label: item.title || item.url,
+                            url: item.url,
+                            isLeaf: true
+                        })),
+                        collapsed: true
+                    };
+                    monthNode.children.push(dayNode);
+                });
+
+                // 更新月份节点的标签，添加记录总数
+                const totalItems = monthNode.children.reduce((sum, day) => sum + day.children.length, 0);
+                monthNode.label = monthData.isEarlier ?
+                    `更早 (${totalItems})` :
+                    `${monthData.year}年${monthData.month}月 (${totalItems})`;
+
+                treeData.children.push(monthNode);
             });
-            // 按日期倒序排序
-            treeData.children.sort((a, b) => new Date(b.id) - new Date(a.id));
         } else {
             // 域名分组的处理
             const entries = Object.entries(groups);
@@ -499,7 +554,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        // 遍历所有根节点
+        // 遍历所有节点
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
@@ -811,7 +866,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const treeData = buildTreeData(groups);
         treeDataCache = treeData;  // 缓存树形数据
 
-        // 加载数据初始化
+        // 加载数��初始化
         graph.data(treeData);
         graph.render();
 
@@ -880,7 +935,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             // 保子节点的折叠状态
                             if (childNode.getModel().collapsed) {
-                                // 如果子节点是折叠状态，确保其子节点保持藏
+                                // 如果子节点是折叠���态，确保其子节点保持
                                 const hideCollapsedChildren = (node) => {
                                     if (node.children) {
                                         node.children.forEach(grandChild => {
@@ -984,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             graph.updateItem(parentNode, parentModel);
                         }
 
-                        // 移除当前节点及其所有子节点
+                        // 移除当前节点及其所��子节点
                         const removeNodeAndChildren = (rootNode) => {
                             const queue = [rootNode];
                             const processedNodes = new Set();
@@ -1314,7 +1369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchResults = matchedPaths.map(path => {
                 const targetNode = graph.findById(path[path.length - 1].id);
                 if (targetNode) {
-                    // 确保节点可
+                    // 确保���点可
                     graph.showItem(targetNode);
 
                     // 添加高亮效果
