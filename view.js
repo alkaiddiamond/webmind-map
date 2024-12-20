@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchNext = document.getElementById('searchNext');
     const searchInfo = document.getElementById('searchInfo');
     const languageSelect = document.getElementById('language');
+    const paginationContainer = document.getElementById('paginationContainer');
 
     // 初始化语言选择器
     languageSelect.value = getCurrentLanguage();
@@ -17,6 +18,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentSearchIndex = -1;
     let treeDataCache = null;
     let allNodes = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    const itemsPerPage = 1000;
+
+    // 更新分页按钮
+    const updatePagination = (totalItems) => {
+        totalPages = Math.ceil(totalItems / itemsPerPage);
+        paginationContainer.innerHTML = '';
+
+        // 如果总页数小于1不显示分页
+        if (totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+
+        paginationContainer.style.display = 'flex';
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.className = `pagination-button ${i === currentPage ? 'active' : ''}`;
+            const start = (i - 1) * itemsPerPage;
+            button.textContent = `${start + 1}+`;
+            button.addEventListener('click', () => {
+                if (currentPage !== i) {
+                    currentPage = i;
+                    loadHistoryItems();
+                }
+            });
+            paginationContainer.appendChild(button);
+        }
+    };
+
+    // 加载历史记录
+    const loadHistoryItems = async () => {
+        try {
+            // 计算时间范围
+            const endTime = Date.now();
+            const startTime = 0;  // 从最早的记录开始
+
+            // 先获取所有历史记录的数量
+            const allHistory = await chrome.history.search({
+                text: '',
+                maxResults: 10000,
+                startTime,
+                endTime
+            });
+
+            // 更新分页
+            updatePagination(allHistory.length);
+
+            // ��取当前页的历史记录
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = currentPage * itemsPerPage;
+            historyItems = allHistory.slice(start, end);
+
+            // 更新视图
+            updateView();
+        } catch (error) {
+            const container = document.getElementById('container');
+            if (container) {
+                container.innerHTML = `<div style="color: red; padding: 20px;">
+                    ${t('loadError', { error: error.message })}
+                </div>`;
+            }
+        }
+    };
 
     // 更新界面文本
     function updateUIText(skipViewUpdate = false) {
@@ -111,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 如果域名以数字开头，检查是否为纯数字和点组成的IP地址形式
+        // 如域名以数字开头，检查是否为纯数字和点组成的IP地址形式
         if (/^\d/.test(hostname)) {
             // 如果看起来像IP地址格式，直接返回
             if (hostname.split('.').every(part => !isNaN(part))) {
@@ -133,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 检查最后两部分是否构成特殊顶级域名
+        // 查最后两部分是否构成特殊顶级域名
         const lastTwoParts = parts.slice(-2).join('.');
         if (specialDomains[lastTwoParts]) {
             // 如果是特顶级域名，返回后三部分
@@ -160,14 +226,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
 
-                // 修改正则表达式以更好地处理数字开头的域名和IP地址
+                // 修改正则表达式以更好处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
                     // 移除可能的端口号和空格（确保再次查）
                     hostname = hostname.split(':')[0];
                 } else {
-                    // 如果正则匹配失败，尝试使用 URL 对象
+                    // 如果正则匹配失败，尝试使用 URL 对
                     try {
                         const url = new URL(urlStr);
                         hostname = url.hostname;
@@ -182,10 +248,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // 除可能的端���号和空格（确保再次查）
+                // 除可能的端号和空格（确保再次查）
                 hostname = hostname.split(':')[0].trim();
 
-                // 果是 chrome:// 或 edge:// 特殊协议直接使用完整名作为根名
+                // 果 chrome://  edge:// 特殊协议直接使用完整名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     if (!groups[rootDomain]) {
@@ -229,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 一级域名
                         rootDomain = hostname;
                     } else {
-                        // 检查是否是特殊顶级域名
+                        // 检查是否是特殊顶域名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
                             // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域
@@ -312,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 域名分组的处理
             const entries = Object.entries(groups);
 
-            // 按照域名首字母排序
+            // 按照域名首字母排
             entries.sort((a, b) => {
                 // 特殊处理"其他"分组，始终放在最后
                 if (a[0] === t('other')) return 1;
@@ -655,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'delete-button'
                 });
 
-                // 添加标悬停效果
+                // 添加标悬停效
                 group.on('mouseenter', () => {
                     glassBg.attr({
                         shadowBlur: 20,
@@ -859,7 +925,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 删除单个页面记录
                         await chrome.history.deleteUrl({ url: model.url });
 
-                        // 更父节点数据
+                        // 父节点数据
                         const parentNode = graph.findById(item.get('parent'));
                         if (parentNode) {
                             const parentModel = parentNode.getModel();
@@ -944,13 +1010,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     // 更新内部数据
-                    const newHistoryItems = await chrome.history.search({
+                    const allHistory = await chrome.history.search({
                         text: '',
-                        maxResults: 1000,
+                        maxResults: 10000,
                         startTime: 0
                     });
-                    // 完全替换历史记录数组
-                    historyItems = newHistoryItems;
+
+                    // 更新分页
+                    updatePagination(allHistory.length);
+
+                    // 获取当前页的历史记录
+                    const start = (currentPage - 1) * itemsPerPage;
+                    const end = currentPage * itemsPerPage;
+                    historyItems = allHistory.slice(start, end);
 
                     // 存当所有展开节点的ID和它们的父节点ID
                     const expandedNodeIds = new Set();
@@ -1128,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function performSearch(query) {
-        // 清除之前的搜索结果
+        // 除之前的搜索结果
         clearSearchHighlights();
         searchResults = [];
         currentSearchIndex = -1;
@@ -1149,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const url = nodeData.url || '';
             const isMatched = label.toLowerCase().includes(queryLower) || url.toLowerCase().includes(queryLower);
 
-            // 如果当前节点匹配，记录完整路径
+            // 果当前节点匹配，记录完整路径
             if (isMatched) {
                 matchedPaths.push([...currentPath, nodeData]);
             }
@@ -1226,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 graph.paint();
             }
 
-            // 如果还有更深的层级，继续展开
+            // 如果还有更深的层级继续展开
             if (depth < maxDepth) {
                 setTimeout(() => {
                     expandNodesAtDepth(depth + 1);
@@ -1287,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bbox = node.getBBox();
         const group = node.get('group');
 
-        // 清除之前的焦点样式
+        // 清除前的焦点样式
         const oldFocus = group.findAll(element => element.get('name') === 'search-focus');
         oldFocus.forEach(shape => shape.remove());
 
@@ -1400,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearSearchFocus() {
         graph.findAll('node', node => {
             const group = node.get('group');
-            // 只移除焦点高亮
+            // 移除焦点高亮
             const shapes = group.get('children').filter(shape =>
                 shape.get('name') === 'search-focus'
             );
@@ -1426,13 +1498,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error('G6 库未能正确加载');
         }
 
-        historyItems = await chrome.history.search({
-            text: '',
-            maxResults: 1000,
-            startTime: 0
-        });
-
-        updateView();
+        // 初始加载
+        await loadHistoryItems();
 
     } catch (error) {
         const container = document.getElementById('container');
