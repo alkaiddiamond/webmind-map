@@ -50,10 +50,9 @@ body.dark-theme {
   padding: 10px;
   border-radius: 8px;
   background: var(--glass-bg-light);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border-light);
   min-width: 300px;
+  pointer-events: auto;
 }
 
 .right-controls {
@@ -66,9 +65,8 @@ body.dark-theme {
   padding: 10px;
   border-radius: 8px;
   background: var(--glass-bg-light);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border-light);
+  pointer-events: auto;
 }
 
 .dark-theme .left-controls,
@@ -108,10 +106,21 @@ button:hover {
 }
 
 #container {
-  width: 100%;
-  height: calc(100vh - 20px);
-  padding-top: 60px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+#container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .search-container {
