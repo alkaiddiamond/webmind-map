@@ -40,7 +40,7 @@
     "description": "下一个匹配按钮"
   },
   "noMatch": {
-    "message": "未找到匹��项",
+    "message": "未找到匹配项",
     "description": "无匹配结果提示"
   },
   "matchCount": {
@@ -78,5 +78,9 @@
   "other": {
     "message": "其他",
     "description": "其他分组"
+  },
+  "earlier": {
+    "message": "更早",
+    "description": "更早的历史记录"
   }
 } 

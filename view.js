@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const monthData = groups[monthKey];
                 const monthNode = {
                     id: monthKey,
-                    label: monthData.isEarlier ? '更早' : `${monthData.year}年${monthData.month}月`,
+                    label: monthData.isEarlier ? t('earlier') : new Date(monthData.year, monthData.month - 1).toLocaleDateString(getCurrentLanguage(), { year: 'numeric', month: 'long' }),
                     children: [],
                     collapsed: true
                 };
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const items = monthData.days[day];
                     const dayNode = {
                         id: `${monthKey}-day-${day}`,
-                        label: `${day}日 (${items.length})`,
+                        label: new Date(monthData.year, monthData.month - 1, day).toLocaleDateString(getCurrentLanguage(), { day: 'numeric', weekday: 'long' }) + ` (${items.length})`,
                         children: items.map(item => ({
                             id: String(item.id),
                             label: item.title || item.url,
@@ -424,8 +424,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 更新月份节点的标签，添加记录总数
                 const totalItems = monthNode.children.reduce((sum, day) => sum + day.children.length, 0);
                 monthNode.label = monthData.isEarlier ?
-                    `更早 (${totalItems})` :
-                    `${monthData.year}年${monthData.month}月 (${totalItems})`;
+                    `${t('earlier')} (${totalItems})` :
+                    `${new Date(monthData.year, monthData.month - 1).toLocaleDateString(getCurrentLanguage(), { year: 'numeric', month: 'long' })} (${totalItems})`;
 
                 treeData.children.push(monthNode);
             });
@@ -1262,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const queryLower = query.toLowerCase();
 
-        // 存储所有匹配的节点和它们的路径
+        // 存储所有匹配的节点和它��的路径
         const matchedPaths = [];
 
         // 递归搜索函数
@@ -1390,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 更新搜索信息
             updateSearchInfo();
 
-            // 如果有搜索结果，跳转到第��个
+            // 如果有搜索结果，跳转到第一个
             if (searchResults.length > 0) {
                 currentSearchIndex = 0;
                 focusSearchResult();
