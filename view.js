@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalPages = Math.ceil(totalItems / itemsPerPage);
         paginationContainer.innerHTML = '';
 
-        // 如果总页数小于1示分页
+        // 如果总页数小于1
         if (totalPages <= 1) {
             paginationContainer.style.display = 'none';
             return;
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 初始化界面文本（跳过视图更新）
     updateUIText(true);
 
-    // 查找第一个可用的URL
+    // 找第个URL
     const findFirstUrl = (node) => {
         if (node.url) return node.url;
         if (node.children && node.children.length > 0) {
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
-                    // 移除可能的端口号和空格（确保再次查）
+                    // 移除可能的端号和空格（确保再次查
                     hostname = hostname.split(':')[0];
                 } else {
                     // 如果正则匹配失败，尝试使用 URL 对
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // 确定根域名
                     if (parts.length === 1) {
-                        // 一级域名
+                        // 一级域
                         rootDomain = hostname;
                     } else {
                         // 检查是否是特殊顶域名
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 如果有无法解析的 URL，添加 "其他" 分组
+        // 如果有无法析的 URL，添加 "他" 分组
         if (otherGroup.totalCount > 0) {
             groups[t('other')] = otherGroup;
         }
@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     collapsed: true
                 };
 
-                // 获取所有日期并排序
+                // 获取所有期并排序
                 const days = Object.keys(monthData.days).sort((a, b) => b - a);
                 days.forEach(day => {
                     const items = monthData.days[day];
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 });
                             });
                     } else {
-                        // 否则创建子域名节点
+                        // 否则创子域名节点
                         const subdomainNode = {
                             id: subdomain,
                             label: `${subdomain} (${items.length})`,
@@ -581,27 +581,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { collapsed = true, children, isLeaf } = cfg;
                 const height = 40;
 
-                // 计算文本宽度
+                // 计算本宽度
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 context.font = '13px Arial';
                 const textWidth = context.measureText(cfg.label).width;
 
-                // 计算节宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
+                // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
-                const iconSpace = 24; // 所有节点都预留图标空间
+                const iconSpace = isLeaf && cfg.url ? 24 : 0; // 只在叶子节点且有URL时预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
                 const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
 
                 // 获取favicon URL
                 let faviconUrl = '';
-                if (isLeaf && cfg.url) {
+                if (isLeaf && cfg.url) {  // 只在叶子节点且有URL时显示favicon
                     faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
-                } else if (children && children.length > 0 && cfg.id !== 'root') {
-                    const firstUrl = findFirstUrl(children[0]);
-                    if (firstUrl) {
-                        faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
-                    }
                 }
 
                 // 计算文本是否需要截断
@@ -691,7 +686,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 group.addShape('text', {
                     attrs: {
                         text: displayText,
-                        x: faviconUrl ? 36 : 12,
+                        x: faviconUrl ? 36 : 12,  // 根据是否有favicon调整文本位置
                         y: height / 2,
                         fontSize: 13,
                         fontFamily: 'Arial',
@@ -703,7 +698,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'label'
                 });
 
-                // 如果文本被截断，添加完整文的title提示
+                // 如果本被截断，添加完整文的title提示
                 if (displayText !== cfg.label) {
                     group.addShape('text', {
                         attrs: {
@@ -834,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     context.font = '13px Arial';
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
-                    const iconSpace = 24; // 所有节点都预留图标空间
+                    const iconSpace = d.isLeaf && d.url ? 24 : 0; // 只在叶子节点且有URL时预留图标空间
                     const maxTextWidth = 300; // 限制文本最大宽度
                     return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
                 },
@@ -866,7 +861,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const treeData = buildTreeData(groups);
         treeDataCache = treeData;  // 缓存树形数据
 
-        // 加载数��初始化
+        // 加载数据初始化
         graph.data(treeData);
         graph.render();
 
@@ -883,7 +878,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 调用 initializeCollapsedState 时传入必要的数
+        // 调用 initializeCollapsedState 时入必要参数
         initializeCollapsedState(graph, treeData);
 
         // 处理节点的显示/隐藏
@@ -905,7 +900,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                             });
 
-                            // 递归隐藏所有子节点的子节点
+                            // 归隐藏所有子节点的子节点
                             const hideChildren = (node) => {
                                 if (node.children) {
                                     node.children.forEach(grandChild => {
@@ -933,9 +928,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                             });
 
-                            // 保子节点的折叠状态
+                            // 保持子节点折叠状态
                             if (childNode.getModel().collapsed) {
-                                // 如果子节点是折叠���态，确保其子节点保持
+                                // 如果子节点是折叠态，确保其子节点保持
                                 const hideCollapsedChildren = (node) => {
                                     if (node.children) {
                                         node.children.forEach(grandChild => {
@@ -980,7 +975,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 删除单个页面记录
                         await chrome.history.deleteUrl({ url: model.url });
 
-                        // 父节点数据
+                        // 父点数据
                         const parentNode = graph.findById(item.get('parent'));
                         if (parentNode) {
                             const parentModel = parentNode.getModel();
@@ -1009,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 移除当前节点
                         graph.removeItem(item);
                     } else {
-                        // 删除域名或日期下有记录
+                        // 删除域名日期下有记录
                         const deletePromises = [];
                         const collectUrlsToDelete = (rootNode) => {
                             const queue = [rootNode];
@@ -1039,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             graph.updateItem(parentNode, parentModel);
                         }
 
-                        // 移除当前节点及其所��子节点
+                        // 移除当前节点及其所有子节点
                         const removeNodeAndChildren = (rootNode) => {
                             const queue = [rootNode];
                             const processedNodes = new Set();
@@ -1079,14 +1074,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const end = currentPage * itemsPerPage;
                     historyItems = allHistory.slice(start, end);
 
-                    // 存当所有展开节点的ID和它们的父节点ID
+                    // 存储所有展开节点的ID和它们的父节点ID
                     const expandedNodeIds = new Set();
                     const expandedParentIds = new Set();
                     graph.getNodes().forEach(node => {
                         const nodeModel = node.getModel();
                         if (!nodeModel.collapsed) {
                             expandedNodeIds.add(nodeModel.id);
-                            // 如果展开节点，父节点也该是展开的
+                            // 如果是展开节点，父节点也应该是展开的
                             const parentNode = graph.findById(node.get('parent'));
                             if (parentNode) {
                                 expandedParentIds.add(parentNode.get('id'));
@@ -1104,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const restoreExpandState = (treeData) => {
                         if (treeData.children) {
                             treeData.children.forEach(node => {
-                                // 果点ID展开集合，或者它是展开点的父节点，则设置为展开状态
+                                // 如果节点ID在展开集合中，或者它是展开节点的父节点，则设置为展开状态
                                 if (expandedNodeIds.has(node.id) || expandedParentIds.has(node.id)) {
                                     node.collapsed = false;
                                 }
@@ -1119,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newTreeData = restoreExpandState(buildTreeData(groups));
                     graph.changeData(newTreeData);
 
-                    // 隐藏折叠节点的子点
+                    // 隐藏折叠节点的子节点
                     const hideCollapsedChildren = (rootNode) => {
                         const queue = [{ node: rootNode, parentCollapsed: false }];
                         const processedNodes = new Set();
@@ -1136,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 model.children.forEach(childData => {
                                     const childNode = graph.findById(childData.id);
                                     if (childNode) {
-                                        // 只有当当前节点折叠或父节点折叠时才隐藏子节点
+                                        // 只有当当前节点折叠或节点折叠时才隐藏子节点
                                         if (isCurrentNodeCollapsed || parentCollapsed) {
                                             graph.hideItem(childNode);
                                             graph.getEdges().forEach(edge => {
@@ -1162,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         hideCollapsedChildren(rootNode);
                     });
 
-                    // 复视图状态
+                    // 恢复视图状态
                     if (matrix) {
                         setTimeout(() => {
                             graph.getGroup().setMatrix(matrix);
@@ -1281,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchedPaths.push([...currentPath, nodeData]);
             }
 
-            // 继续搜索子节点，无论是否折叠
+            // 继续搜索子节点论是否折叠
             if (nodeData.children) {
                 nodeData.children.forEach(child => {
                     searchNode(child, [...currentPath, nodeData]);
@@ -1302,7 +1297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // 找到最大深度
+        // 找到最大度
         const maxDepth = Math.max(...matchedPaths.map(path => path.length));
 
         // 按深度逐层展开节点
@@ -1332,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             // 显示当前节点
                             graph.showItem(node);
 
-                            // 显示到下一层节点的边
+                            // 显示到下一层点的边
                             if (depth < path.length) {
                                 const nextNodeData = path[depth];
                                 graph.getEdges().forEach(edge => {
@@ -1369,7 +1364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchResults = matchedPaths.map(path => {
                 const targetNode = graph.findById(path[path.length - 1].id);
                 if (targetNode) {
-                    // 确保���点可
+                    // 确保点
                     graph.showItem(targetNode);
 
                     // 添加高亮效果
@@ -1395,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 更新搜索信息
             updateSearchInfo();
 
-            // 如果有搜索结果，跳转到第一个
+            // 如果有搜索结果，跳转到第��个
             if (searchResults.length > 0) {
                 currentSearchIndex = 0;
                 focusSearchResult();
@@ -1451,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return parents;
         };
 
-        // 计算包含当前节点及其所有父节点的边界框
+        // 计算包含当前节点及其所有父节点的边框
         const parentNodes = getParentNodes(node);
         const allNodes = [node, ...parentNodes];
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1485,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             y: (minY + maxY) / 2
         });
 
-        // 然后使用 focusItem 居中显示当前节点
+        // 然后使用 focusItem 显示当前节点
         graph.focusItem(node, true, {
             easing: 'easeCubic',
             duration: 300,
@@ -1513,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearSearchHighlights() {
         graph.findAll('node', node => {
             const group = node.get('group');
-            // 移除所有搜索相关的形状
+            // 移除所有索相关的形状
             const shapes = group.get('children').filter(shape =>
                 shape.get('name') === 'search-highlight' ||
                 shape.get('name') === 'search-focus'
