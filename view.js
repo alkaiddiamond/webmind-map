@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortControls.style.display = groupBySelect.value === 'domain' ? 'flex' : 'none';
         }
 
-        // 只有在需要时且图初始化的情况下才更新视图
+        // 只有在需要时且图��始化的情况下才更新视图
         if (!skipViewUpdate && typeof graph !== 'undefined' && graph !== null) {
             updateView();
         }
@@ -189,21 +189,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 获取根域名的函数
     const getRootDomain = (hostname) => {
-        // 检是否是IP地址（包括IPv4和IPv6）
+        // 检查是否是IP地址（包括IPv4和IPv6）
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
-        // 果是IP地址，直接返回完整地址
+        // 如果是IP地址，直接返回完整地址
         if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
             return hostname;
         }
 
-        // 如果域名不包含点号或者是localhost，直返回
+        // 如果域名不包含点号或者是localhost，直接返回
         if (!hostname.includes('.') || hostname === 'localhost') {
             return hostname;
         }
 
-        // 如域名以数字开，检查否为纯数字和点组的IP地址形式
+        // 如果域名以数字开头，检查是否为纯数字和点组成的IP地址形式
         if (/^\d/.test(hostname)) {
             // 如果看起来像IP地址格式，直接返回
             if (hostname.split('.').every(part => !isNaN(part))) {
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const parts = hostname.split('.');
 
-        // 如部分，直接返回完整域名
+        // 如果部分，直接返回完整域名
         if (parts.length <= 2) {
             return hostname;
         }
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 查最后两部分是否构成特殊顶级域名
         const lastTwoParts = parts.slice(-2).join('.');
         if (specialDomains[lastTwoParts]) {
-            // 如果是特顶级域名，返回后部分
+            // 如果是特殊顶级域名，返回后部分
             return parts.slice(-3).join('.');
         }
 
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 let rootDomain;
-                // 检查是否是IP地址（包括IPv4和IPv6
+                // 检查是否是IP地址（包括IPv4和IPv6）
                 const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
                 const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
@@ -321,10 +321,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 一级域
                         rootDomain = hostname;
                     } else {
-                        // 检查是否是特殊���名
+                        // 检查是否是特殊域名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
-                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域
+                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域名
                             rootDomain = parts.slice(-3).join('.');
                         } else {
                             // 使用最后两部分作为根名（如 bilibili.com）
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 计算节点宽度：文本宽度 + 右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
-                const iconSpace = (isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组��图中所有节点都预留图标空间
+                const iconSpace = (isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所有节点都预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
                 const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
 
@@ -1250,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icon.attr('text', collapsed ? '+' : '-');
             }
 
-            // 处理子节点显示/隐藏
+            // 处理子节点显示/隐��
             processChildren(item, collapsed);
 
             // 更新节点状态
@@ -1552,8 +1552,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             maxY = Math.max(maxY, y + box.height);
         });
 
-        // 计算合适缩放级别
-        const padding = 100;  // 距
+        // 计算合适的缩放级别
+        const padding = 100;  // 边距
         const viewportWidth = graph.get('width');
         const viewportHeight = graph.get('height');
         const contentWidth = maxX - minX + padding * 2;
@@ -1561,7 +1561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const scaleX = viewportWidth / contentWidth;
         const scaleY = viewportHeight / contentHeight;
-        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大缩放级为1
+        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大缩放级别为1
 
         // 先缩放到合适的级别
         graph.zoomTo(scale, {
@@ -1569,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             y: (minY + maxY) / 2
         });
 
-        // 然后使用 focusItem 显示当前节���
+        // 然后使用 focusItem 显示当前节点
         graph.focusItem(node, true, {
             easing: 'easeCubic',
             duration: 300,
