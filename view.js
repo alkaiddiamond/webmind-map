@@ -105,18 +105,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const getThemeColors = () => {
         return {
             root: {
-                fill: isDarkTheme ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-                stroke: isDarkTheme ? '#64748b' : '#94a3b8',
+                fill: isDarkTheme ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.5)',
+                stroke: isDarkTheme ? '#475569' : '#94a3b8',
                 textColor: isDarkTheme ? '#f1f5f9' : '#1e293b'
             },
             domain: {
-                fill: isDarkTheme ? 'rgba(51, 65, 85, 0.5)' : 'rgba(241, 245, 249, 0.5)',
-                stroke: isDarkTheme ? '#475569' : '#cbd5e1',
+                fill: isDarkTheme ? 'rgba(51, 65, 85, 0.8)' : 'rgba(241, 245, 249, 0.5)',
+                stroke: isDarkTheme ? '#334155' : '#cbd5e1',
                 textColor: isDarkTheme ? '#e2e8f0' : '#334155'
             },
             leaf: {
-                fill: isDarkTheme ? 'rgba(71, 85, 105, 0.5)' : 'rgba(226, 232, 240, 0.5)',
-                stroke: isDarkTheme ? '#334155' : '#94a3b8',
+                fill: isDarkTheme ? 'rgba(71, 85, 105, 0.8)' : 'rgba(226, 232, 240, 0.5)',
+                stroke: isDarkTheme ? '#1e293b' : '#94a3b8',
                 textColor: isDarkTheme ? '#cbd5e1' : '#475569'
             }
         };
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
-                    // 移除可能的端号和空格（确保再次查
+                    // 移除可能的端号和空（确保再次查
                     hostname = hostname.split(':')[0];
                 } else {
                     // 如果正则匹配失败，尝试使用 URL 对
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 初始折叠状态
     const initializeCollapsedState = (graph, treeData) => {
-        // 首先确保有节点见
+        // 首先确有节点见
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
@@ -564,7 +564,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 获取favicon URL
                 let faviconUrl = '';
-                if (groupBySelect.value === 'domain') {  // 在域名分组视图中显示favicon
+                if (cfg.id === 'root') {
+                    faviconUrl = `chrome-extension://${chrome.runtime.id}/icons/icon48.png`;  // 使用48x48的图标
+                } else if (groupBySelect.value === 'domain') {  // 在域名分组视图中显示favicon
                     if (isLeaf && cfg.url) {
                         faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
                     } else if (children && children.length > 0 && cfg.id !== 'root') {
@@ -622,37 +624,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                         fill: colorScheme.fill,
                         stroke: colorScheme.stroke,
                         lineWidth: 1,
-                        opacity: 0.9,
-                        shadowColor: isDarkTheme ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
-                        shadowBlur: 10,
-                        shadowOffsetX: 2,
-                        shadowOffsetY: 4,
+                        opacity: isDarkTheme ? 1 : 0.9,
+                        shadowColor: isDarkTheme ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.1)',
+                        shadowBlur: isDarkTheme ? 3 : 10,
+                        shadowOffsetX: isDarkTheme ? 1 : 2,
+                        shadowOffsetY: isDarkTheme ? 1 : 4,
                     },
                     name: 'glass-bg'
                 });
 
-                // 绘制玻璃态效果
-                group.addShape('rect', {
-                    attrs: {
-                        x: 0,
-                        y: 0,
-                        width: width / 2,
-                        height: height / 2,
-                        radius: [8, 0, 0, 0],
-                        fill: 'rgba(255, 255, 255, 0.1)',
-                        opacity: 0.3,
-                    },
-                    name: 'glass-highlight'
-                });
+                // 只在亮色主题下添加玻璃态高光效果
+                if (!isDarkTheme) {
+                    group.addShape('rect', {
+                        attrs: {
+                            x: 0,
+                            y: 0,
+                            width: width / 2,
+                            height: height / 2,
+                            radius: [8, 0, 0, 0],
+                            fill: 'rgba(255, 255, 255, 0.1)',
+                            opacity: 0.3,
+                        },
+                        name: 'glass-highlight'
+                    });
+                }
 
                 // 添加favicon
                 if (faviconUrl) {
+                    const iconSize = 16;  // 统一使用16x16的尺寸
+                    const iconX = cfg.id === 'root' ? 8 : 12;  // 根节点的图标位置靠左一些
                     group.addShape('image', {
                         attrs: {
-                            x: 12,
-                            y: height / 2 - 8,
-                            width: 16,
-                            height: 16,
+                            x: iconX,
+                            y: height / 2 - iconSize / 2,
+                            width: iconSize,
+                            height: iconSize,
                             img: faviconUrl,
                             cursor: 'pointer',
                         },
@@ -664,7 +670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 group.addShape('text', {
                     attrs: {
                         text: displayText,
-                        x: faviconUrl ? 36 : 12,  // 根据是否有favicon调整文本位置
+                        x: faviconUrl ? (cfg.id === 'root' ? 28 : 36) : 12,  // 根节点的文本位置需要考虑图标间距
                         y: height / 2,
                         fontSize: 13,
                         fontFamily: 'Arial',
@@ -719,7 +725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-                // 添加删除按钮
+                // 添加删除���钮
                 group.addShape('circle', {
                     attrs: {
                         x: width - 24,
@@ -749,18 +755,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'delete-button'
                 });
 
-                // 添加标悬停效
+                // 添加hover效果
                 group.on('mouseenter', () => {
                     glassBg.attr({
-                        shadowBlur: 20,
-                        opacity: 1,
+                        shadowBlur: isDarkTheme ? 6 : 20,
+                        opacity: isDarkTheme ? 1 : 1,
+                        shadowColor: isDarkTheme ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.2)',
                     });
                 });
 
                 group.on('mouseleave', () => {
                     glassBg.attr({
-                        shadowBlur: 10,
-                        opacity: 0.9,
+                        shadowBlur: isDarkTheme ? 3 : 10,
+                        opacity: isDarkTheme ? 1 : 0.9,
+                        shadowColor: isDarkTheme ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.1)',
                     });
                 });
 
@@ -775,7 +783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
         });
 
-        // 创建图例
+        // 创图例
         graph = new G6.TreeGraph({
             container: 'container',
             width,
@@ -801,13 +809,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 getHeight: () => 40,
                 getWidth: (d) => {
-                    // 创建时canvas计算文本宽度
+                    // 创建时canvas计算文本宽
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     context.font = '13px Arial';
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
-                    const iconSpace = (d.isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所��节点都预留图标空间
+                    const iconSpace = (d.isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所节点都预留图标空间
                     const maxTextWidth = 300; // 限制文本最大宽度
                     return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
                 },
@@ -843,7 +851,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         graph.data(treeData);
         graph.render();
 
-        // 确保所有根节点都见
+        // 确保所有根节点都
         graph.getNodes().forEach(node => {
             if (!node.get('parent')) {
                 graph.showItem(node);
@@ -899,7 +907,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         } else {
                             // 展开时只显示直接子节点
                             graph.showItem(childNode);
-                            // 显示连接到子节点的边
+                            // 显示连接到子节点边的边
                             graph.getEdges().forEach(edge => {
                                 if (edge.getTarget().get('id') === childData.id) {
                                     graph.showItem(edge);
@@ -1086,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newTreeData = restoreExpandState(buildTreeData(groups));
                     graph.changeData(newTreeData);
 
-                    // 隐藏折叠节点的子节点
+                    // 隐藏折叠节点的节点
                     const hideCollapsedChildren = (rootNode) => {
                         const queue = [{ node: rootNode, parentCollapsed: false }];
                         const processedNodes = new Set();
@@ -1123,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     };
 
-                    // 处理所有根节点
+                    // 处理所有根点
                     const rootNodes = graph.getNodes().filter(node => !node.get('parent'));
                     rootNodes.forEach(rootNode => {
                         hideCollapsedChildren(rootNode);
@@ -1248,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchedPaths.push([...currentPath, nodeData]);
             }
 
-            // 继续搜索子节点论是否折叠
+            // 继续搜索子节点论是否叠
             if (nodeData.children) {
                 nodeData.children.forEach(child => {
                     searchNode(child, [...currentPath, nodeData]);
@@ -1435,7 +1443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             maxY = Math.max(maxY, y + box.height);
         });
 
-        // 计算合适的缩放级别
+        // 计算合适缩放级别
         const padding = 100;  // 距
         const viewportWidth = graph.get('width');
         const viewportHeight = graph.get('height');
@@ -1480,7 +1488,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearSearchHighlights() {
         graph.findAll('node', node => {
             const group = node.get('group');
-            // 移除所有索相关的形状
+            // 移除所有索相关形状
             const shapes = group.get('children').filter(shape =>
                 shape.get('name') === 'search-highlight' ||
                 shape.get('name') === 'search-focus'
@@ -1517,7 +1525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         if (typeof G6 === 'undefined') {
-            throw new Error('G6 库未能正确加载');
+            throw new Error('G6 库未能正确���载');
         }
 
         // 初始加载
