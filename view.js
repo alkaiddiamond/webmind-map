@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchNext = document.getElementById('searchNext');
     const searchInfo = document.getElementById('searchInfo');
     const languageSelect = document.getElementById('language');
-    const paginationContainer = document.getElementById('paginationContainer');
 
     // 初始化语言选择器
     languageSelect.value = getCurrentLanguage();
@@ -18,36 +17,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentSearchIndex = -1;
     let treeDataCache = null;
     let allNodes = [];
-    let currentPage = 1;
-    let totalPages = 1;
-    const itemsPerPage = 1000;
-
-    // 更新分页按钮
-    const updatePagination = (totalItems) => {
-        totalPages = Math.ceil(totalItems / itemsPerPage);
-        paginationContainer.innerHTML = '';
-
-        // 如果总页数小于1
-        if (totalPages <= 1) {
-            paginationContainer.style.display = 'none';
-            return;
-        }
-
-        paginationContainer.style.display = 'flex';
-        for (let i = 1; i <= totalPages; i++) {
-            const button = document.createElement('button');
-            button.className = `pagination-button ${i === currentPage ? 'active' : ''}`;
-            const start = (i - 1) * itemsPerPage;
-            button.textContent = `${start + 1}+`;
-            button.addEventListener('click', () => {
-                if (currentPage !== i) {
-                    currentPage = i;
-                    loadHistoryItems();
-                }
-            });
-            paginationContainer.appendChild(button);
-        }
-    };
 
     // 加载历史记录
     const loadHistoryItems = async () => {
@@ -435,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 按照域名首字母排
             entries.sort((a, b) => {
-                // 特殊处理"其他"分组，始终放在最后
+                // 特殊处"其他"分组，始终放在最后
                 if (a[0] === t('other')) return 1;
                 if (b[0] === t('other')) return -1;
                 // 其他情况按照域名字母排序
@@ -468,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 });
                             });
                     } else {
-                        // 否则创子域名节点
+                        // 否则创域名节点
                         const subdomainNode = {
                             id: subdomain,
                             label: `${subdomain} (${items.length})`,
@@ -501,7 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
                 graph.showItem(rootNode);
-                // 显示连接到根节点的边
+                // 显示连接到节点的边
                 graph.getEdges().forEach(edge => {
                     if (edge.getSource().get('id') === rootData.id) {
                         graph.showItem(edge);
@@ -535,7 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     }
                                 });
                             } else {
-                                // 如果父节点是展开状态，显示子节点
+                                // 如果父节点展开状态，显示子节点
                                 graph.showItem(childNode);
                                 // 显示连接到子节点的边
                                 graph.getEdges().forEach(edge => {
@@ -589,13 +558,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
-                const iconSpace = isLeaf && cfg.url ? 24 : 0; // 只在叶子节点且有URL时预留图标空间
+                const iconSpace = (isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所有节点都预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
                 const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
 
                 // 获取favicon URL
                 let faviconUrl = '';
-                if (isLeaf && cfg.url) {  // 只在叶子节点且有URL时显示favicon
+                if (groupBySelect.value === 'domain') {  // 在域名分组视图中显示favicon
+                    if (isLeaf && cfg.url) {
+                        faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
+                    } else if (children && children.length > 0 && cfg.id !== 'root') {
+                        const firstUrl = findFirstUrl(children[0]);
+                        if (firstUrl) {
+                            faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
+                        }
+                    }
+                } else if (isLeaf && cfg.url) {  // 在日期分组视图中只在叶子节点显示favicon
                     faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
                 }
 
@@ -829,7 +807,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     context.font = '13px Arial';
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
-                    const iconSpace = d.isLeaf && d.url ? 24 : 0; // 只在叶子节点且有URL时预留图标空间
+                    const iconSpace = (d.isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所��节点都预留图标空间
                     const maxTextWidth = 300; // 限制文本最大宽度
                     return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
                 },
@@ -878,7 +856,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 调用 initializeCollapsedState 时入必要参数
+        // 调 initializeCollapsedState 时入必要参数
         initializeCollapsedState(graph, treeData);
 
         // 处理节点的显示/隐藏
@@ -1062,17 +1040,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // 更新内部数据
                     const allHistory = await chrome.history.search({
                         text: '',
-                        maxResults: 10000,
+                        maxResults: 100000,
                         startTime: 0
                     });
 
-                    // 更新分页
-                    updatePagination(allHistory.length);
-
-                    // 获取当前页的历史记录
-                    const start = (currentPage - 1) * itemsPerPage;
-                    const end = currentPage * itemsPerPage;
-                    historyItems = allHistory.slice(start, end);
+                    // 更新历史记录
+                    historyItems = allHistory;
 
                     // 存储所有展开节点的ID和它们的父节点ID
                     const expandedNodeIds = new Set();
@@ -1081,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const nodeModel = node.getModel();
                         if (!nodeModel.collapsed) {
                             expandedNodeIds.add(nodeModel.id);
-                            // 如果是展开节点，父节点也应该是展开的
                             const parentNode = graph.findById(node.get('parent'));
                             if (parentNode) {
                                 expandedParentIds.add(parentNode.get('id'));
@@ -1262,16 +1234,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const queryLower = query.toLowerCase();
 
-        // 存储所有匹配的节点和它��的路径
+        // 存储所有匹配的节点和它的路径
         const matchedPaths = [];
 
-        // 递归搜索函数
+        // 递归索函数
         function searchNode(nodeData, currentPath = []) {
             const label = nodeData.label || '';
             const url = nodeData.url || '';
             const isMatched = label.toLowerCase().includes(queryLower) || url.toLowerCase().includes(queryLower);
 
-            // 果当前节点匹配，记录完整路径
+            // 果当节点匹配，记录完整路径
             if (isMatched) {
                 matchedPaths.push([...currentPath, nodeData]);
             }
