@@ -1,19 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const groupBySelect = document.getElementById('groupBy');
-    const themeToggle = document.getElementById('themeToggle');
-    const searchInput = document.getElementById('searchInput');
-    const searchPrev = document.getElementById('searchPrev');
-    const searchNext = document.getElementById('searchNext');
-    const searchInfo = document.getElementById('searchInfo');
-    const languageSelect = document.getElementById('language');
-
-    // 添加排序相关变量
-    let sortBy = 'name';  // 'name' 或 'count'
-    let sortDirection = 'asc';  // 'asc' 或 'desc'
-
-    // 初始化语言选择器
-    languageSelect.value = getCurrentLanguage();
-
+    // 全局变量声明
     let graph = null;
     let isDarkTheme = false;
     let historyItems = [];
@@ -21,6 +7,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentSearchIndex = -1;
     let treeDataCache = null;
     let allNodes = [];
+    let sortBy = 'name';  // 默认按名称排序
+    let sortDirection = 'asc';  // 默认升序
+
+    // 获取DOM元素
+    const groupBySelect = document.getElementById('groupBy');
+    const themeToggle = document.getElementById('themeToggle');
+    const searchInput = document.getElementById('searchInput');
+    const searchPrev = document.getElementById('searchPrev');
+    const searchNext = document.getElementById('searchNext');
+    const searchInfo = document.getElementById('searchInfo');
+    const languageSelect = document.getElementById('language');
+    const sortSelect = document.getElementById('sortSelect');
+    const sortDirectionBtn = document.getElementById('sortDirection');
+
+    // 初始化排序控件
+    if (sortSelect) {
+        sortSelect.value = sortBy;
+        sortSelect.addEventListener('change', (e) => {
+            sortBy = e.target.value;
+            updateView();
+        });
+    }
+
+    if (sortDirectionBtn) {
+        sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';
+        sortDirectionBtn.addEventListener('click', () => {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            sortDirectionBtn.textContent = sortDirection === 'desc' ? '↓' : '↑';
+            updateView();
+        });
+    }
+
+    // 初始化语言选择器
+    languageSelect.value = getCurrentLanguage();
 
     // 加载历史记录
     const loadHistoryItems = async () => {
@@ -29,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const endTime = Date.now();
             const startTime = 0;  // 从最早的记录开始
 
-            // 取所有历史记录
+            // 获取所有历史记录
             historyItems = await chrome.history.search({
                 text: '',
                 maxResults: 100000,  // 设置一个足够大的值
@@ -83,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortControls.style.display = groupBySelect.value === 'domain' ? 'flex' : 'none';
         }
 
-        // 只有在需要时且图已初始化的情况下才更新视图
+        // 只有在需要时且图初始化的情况下才更新视图
         if (!skipViewUpdate && typeof graph !== 'undefined' && graph !== null) {
             updateView();
         }
@@ -133,52 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 初始化界面文本（跳过视图更新）
     updateUIText(true);
-
-    // 初始化排序控件
-    const sortSelect = document.getElementById('sortSelect');
-    const sortDirectionBtn = document.getElementById('sortDirection');
-
-    // 添加排序控件事件监听器
-    if (sortSelect) {
-        sortSelect.value = sortBy;  // 设置初始值
-        sortSelect.addEventListener('change', (e) => {
-            sortBy = e.target.value;
-            // 防止重复渲染，使用防抖
-            if (window.sortUpdateTimeout) {
-                clearTimeout(window.sortUpdateTimeout);
-            }
-            window.sortUpdateTimeout = setTimeout(() => {
-                updateView();
-            }, 100);
-        });
-    }
-
-    if (sortDirectionBtn) {
-        sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';  // 设置初始值
-        sortDirectionBtn.addEventListener('click', () => {
-            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';
-            // 防止重复渲染，使用防抖
-            if (window.sortUpdateTimeout) {
-                clearTimeout(window.sortUpdateTimeout);
-            }
-            window.sortUpdateTimeout = setTimeout(() => {
-                updateView();
-            }, 100);
-        });
-    }
-
-    // 找第个URL
-    const findFirstUrl = (node) => {
-        if (node.url) return node.url;
-        if (node.children && node.children.length > 0) {
-            for (const child of node.children) {
-                const url = findFirstUrl(child);
-                if (url) return url;
-            }
-        }
-        return null;
-    };
 
     // 主题切换函数
     const toggleTheme = () => {
@@ -246,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const parts = hostname.split('.');
 
-        // 如果只有两部分，直接返回完整域名
+        // 如部分，直接返回完整域名
         if (parts.length <= 2) {
             return hostname;
         }
@@ -258,7 +232,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return parts.slice(-3).join('.');
         }
 
-        // 对于其他情况，返回��后两部分
+        // 对于其他情况，返回后两部分
         return parts.slice(-2).join('.');
     };
 
@@ -285,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // 移除可能的号和空（确保再次查
                     hostname = hostname.split(':')[0];
                 } else {
-                    // 如果正则匹配失败，尝试使用 URL 对
+                    // 果正则匹配失败，尝试使用 URL 对
                     try {
                         const url = new URL(urlStr);
                         hostname = url.hostname;
@@ -344,10 +318,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // 确定根域名
                     if (parts.length === 1) {
-                        // 一���域
+                        // 一级域
                         rootDomain = hostname;
                     } else {
-                        // 检查是否是特殊顶域名
+                        // 检查是否是特殊���名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
                             // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域
@@ -437,6 +411,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         return groups;
     };
 
+    // 查找第一个可用的URL
+    function findFirstUrl(node) {
+        if (node.url) {
+            return node.url;
+        }
+        if (node.children && node.children.length > 0) {
+            for (const child of node.children) {
+                const url = findFirstUrl(child);
+                if (url) {
+                    return url;
+                }
+            }
+        }
+        return null;
+    }
+
     // 构建树形数据
     const buildTreeData = (groups) => {
         const treeData = {
@@ -463,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // 按数量排序
                     result = b[1].totalCount - a[1].totalCount;
                 }
-                return sortDirection === 'asc' ? result : -result;
+                return sortDirection === 'desc' ? -result : result;
             });
 
             entries.forEach(([rootDomain, domainData]) => {
@@ -484,7 +474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         result = b[1].length - a[1].length;
                     }
-                    return sortDirection === 'asc' ? result : -result;
+                    return sortDirection === 'desc' ? -result : result;
                 });
 
                 subdomainEntries.forEach(([subdomain, items]) => {
@@ -497,7 +487,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             } else {
                                 result = b.visitCount - a.visitCount;
                             }
-                            return sortDirection === 'asc' ? result : -result;
+                            return sortDirection === 'desc' ? -result : result;
                         });
 
                         sortedItems.forEach(item => {
@@ -520,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     } else {
                                         result = b.visitCount - a.visitCount;
                                     }
-                                    return sortDirection === 'asc' ? result : -result;
+                                    return sortDirection === 'desc' ? -result : result;
                                 })
                                 .map(item => ({
                                     id: String(item.id),
@@ -613,6 +603,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
+    // 获取favicon URL的工具函数
+    function getFaviconUrl(node) {
+        if (!node) return '';
+
+        if (node.id === 'root') {
+            return `chrome-extension://${chrome.runtime.id}/icons/icon48.png`;
+        }
+
+        if (node.url) {
+            return `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(node.url)}&size=16`;
+        }
+
+        if (node.id && node.id !== 'root') {
+            return `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=https://${encodeURIComponent(node.id)}&size=16`;
+        }
+
+        return '';
+    }
+
     // 更新视图
     const updateView = () => {
         const container = document.getElementById('container');
@@ -637,7 +646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 计算节点宽度：文本宽度 + 右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
-                const iconSpace = (isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所有节点都预留图标空间
+                const iconSpace = (isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组��图中所有节点都预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
                 const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
 
@@ -645,17 +654,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let faviconUrl = '';
                 if (cfg.id === 'root') {
                     faviconUrl = `chrome-extension://${chrome.runtime.id}/icons/icon48.png`;  // 用48x48的图标
-                } else if (groupBySelect.value === 'domain') {  // 在域名分组视图中显示favicon
-                    if (isLeaf && cfg.url) {
-                        faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
-                    } else if (children && children.length > 0 && cfg.id !== 'root') {
-                        const firstUrl = findFirstUrl(children[0]);
-                        if (firstUrl) {
-                            faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(firstUrl)}&size=16`;
-                        }
-                    }
-                } else if (isLeaf && cfg.url) {  // 在日期分组视图中只在叶子节点显示favicon
+                } else if (cfg.url) {
                     faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
+                } else if (cfg.id && cfg.id !== 'root') {
+                    // 对于非叶子节点，使用域名构建favicon URL
+                    faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=https://${encodeURIComponent(cfg.id)}&size=16`;
                 }
 
                 // 计算文本是否需要截断
@@ -679,7 +682,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     displayText = displayText.slice(0, start) + '...';
                 }
 
-                // ���取当前主题的颜色方案
+                // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
 
                 // 选择颜色方案
@@ -1044,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const parentNode = graph.findById(item.get('parent'));
                         if (parentNode) {
                             const parentModel = parentNode.getModel();
-                            // 从父节点的children中移除当前节点
+                            // 从节点的children移除当前节点
                             parentModel.children = parentModel.children.filter(child => child.id !== model.id);
                             // 更新父节点显示的数
                             const count = parentModel.children.length;
@@ -1199,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                 }
                                             });
                                         }
-                                        // 将父节点的折叠状态传给子节点
+                                        // 将父节点的折叠态传给子节点
                                         queue.push({
                                             node: childNode,
                                             parentCollapsed: isCurrentNodeCollapsed || parentCollapsed
@@ -1294,22 +1297,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Add sort controls event listeners
-        if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => {
-                sortBy = e.target.value;
-                updateView();
-            });
-        }
-
-        if (sortDirectionBtn) {
-            sortDirectionBtn.addEventListener('click', () => {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';
-                updateView();
-            });
-        }
-
         // Add language change listener
         window.addEventListener('languageChanged', updateSortControls);
 
@@ -1399,7 +1386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // 找到最大��
+        // 找到最大
         const maxDepth = Math.max(...matchedPaths.map(path => path.length));
 
         // 按深度逐层展开节点
@@ -1444,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // 如果当前度有节点被展开，更新布局
+            // 如果当前度有节点被展开更新布局
             if (hasExpandedNodes) {
                 graph.layout();
                 graph.paint();
@@ -1582,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             y: (minY + maxY) / 2
         });
 
-        // 然后使用 focusItem 显示当前节点
+        // 然后使用 focusItem 显示当前节���
         graph.focusItem(node, true, {
             easing: 'easeCubic',
             duration: 300,
