@@ -53,6 +53,10 @@ body.dark-theme {
   border: 1px solid var(--glass-border-light);
   min-width: 300px;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .right-controls {
@@ -126,14 +130,15 @@ button:hover {
 .search-container {
   display: flex;
   align-items: center;
-  gap: 4px;
-  width: 100%;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 10px;
 }
 
 #searchInput {
-  padding: 6px 12px;
-  border: 1px solid var(--glass-border-light);
+  flex: 1;
+  min-width: 200px;
+  padding: 5px;
+  border: 1px solid #ccc;
   border-radius: 4px;
   background: var(--glass-bg-light);
   color: var(--text-color-light);
@@ -277,4 +282,45 @@ button:hover {
   width: 120px;
   min-width: 120px;
   max-width: 120px;
+}
+
+.group-sort-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#groupBy,
+#sortSelect {
+  height: 28px;
+  padding: 4px 8px;
+  border: 1px solid var(--glass-border-light);
+  border-radius: 4px;
+  background: var(--glass-bg-light);
+  color: var(--text-color);
+}
+
+#sortControls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#sortDirection {
+  height: 28px;
+  padding: 4px 8px;
+  border: 1px solid var(--glass-border-light);
+  border-radius: 4px;
+  background: var(--glass-bg-light);
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.dark-theme #groupBy,
+.dark-theme #sortSelect,
+.dark-theme #sortDirection {
+  border-color: var(--glass-border-dark);
+  background: var(--glass-bg-dark);
+  color: var(--text-color-dark);
 }

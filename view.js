@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchInfo = document.getElementById('searchInfo');
     const languageSelect = document.getElementById('language');
 
+    // 添加排序相关变量
+    let sortBy = 'name';  // 'name' 或 'count'
+    let sortDirection = 'asc';  // 'asc' 或 'desc'
+
     // 初始化语言选择器
     languageSelect.value = getCurrentLanguage();
 
@@ -25,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const endTime = Date.now();
             const startTime = 0;  // 从最早的记录开始
 
-            // 获取所有历史记录
+            // 取所有历史记录
             historyItems = await chrome.history.search({
                 text: '',
                 maxResults: 100000,  // 设置一个足够大的值
@@ -48,15 +52,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 更新界面文本
     function updateUIText(skipViewUpdate = false) {
         document.title = t('title');
+
+        // 更新分组选择器
         groupBySelect.innerHTML = `
             <option value="domain">${t('groupByDomain')}</option>
             <option value="date">${t('groupByDate')}</option>
         `;
+
+        // 更新排序控件
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            const currentValue = sortSelect.value;
+            sortSelect.innerHTML = `
+                <option value="name">${t('sortByName')}</option>
+                <option value="count">${t('sortByCount')}</option>
+            `;
+            sortSelect.value = currentValue || 'name';
+        }
+
+        // 更新其他控件
         themeToggle.textContent = t('toggleTheme');
         searchInput.placeholder = t('searchPlaceholder');
         searchButton.title = t('searchButton');
         searchPrev.title = t('prevMatch');
         searchNext.title = t('nextMatch');
+
+        // 确保排序控件的显示状态正确
+        const sortControls = document.getElementById('sortControls');
+        if (sortControls) {
+            sortControls.style.display = groupBySelect.value === 'domain' ? 'flex' : 'none';
+        }
 
         // 只有在需要时且图已初始化的情况下才更新视图
         if (!skipViewUpdate && typeof graph !== 'undefined' && graph !== null) {
@@ -66,16 +91,82 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 监听语言变化
     languageSelect.addEventListener('change', (e) => {
-        setLanguage(e.target.value);
-        updateUIText();
+        const lang = e.target.value;
+        setLanguage(lang);
     });
 
+    // 监听语言变化事件
     window.addEventListener('languageChanged', () => {
-        updateUIText();
+        document.title = t('title');
+
+        // 更新分组选择器
+        groupBySelect.innerHTML = `
+            <option value="domain">${t('groupByDomain')}</option>
+            <option value="date">${t('groupByDate')}</option>
+        `;
+
+        // 更新题切换按钮
+        themeToggle.textContent = t('toggleTheme');
+
+        // 更新排序控件
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            const currentValue = sortSelect.value;
+            sortSelect.innerHTML = `
+                <option value="name">${t('sortByName')}</option>
+                <option value="count">${t('sortByCount')}</option>
+            `;
+            sortSelect.value = currentValue || 'name';
+        }
+
+        // 更新搜索相关文本
+        searchInput.placeholder = t('searchPlaceholder');
+        searchButton.title = t('searchButton');
+        searchPrev.title = t('prevMatch');
+        searchNext.title = t('nextMatch');
+
+        // 更新视图
+        if (typeof graph !== 'undefined' && graph !== null) {
+            updateView();
+        }
     });
 
     // 初始化界面文本（跳过视图更新）
     updateUIText(true);
+
+    // 初始化排序控件
+    const sortSelect = document.getElementById('sortSelect');
+    const sortDirectionBtn = document.getElementById('sortDirection');
+
+    // 添加排序控件事件监听器
+    if (sortSelect) {
+        sortSelect.value = sortBy;  // 设置初始值
+        sortSelect.addEventListener('change', (e) => {
+            sortBy = e.target.value;
+            // 防止重复渲染，使用防抖
+            if (window.sortUpdateTimeout) {
+                clearTimeout(window.sortUpdateTimeout);
+            }
+            window.sortUpdateTimeout = setTimeout(() => {
+                updateView();
+            }, 100);
+        });
+    }
+
+    if (sortDirectionBtn) {
+        sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';  // 设置初始值
+        sortDirectionBtn.addEventListener('click', () => {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';
+            // 防止重复渲染，使用防抖
+            if (window.sortUpdateTimeout) {
+                clearTimeout(window.sortUpdateTimeout);
+            }
+            window.sortUpdateTimeout = setTimeout(() => {
+                updateView();
+            }, 100);
+        });
+    }
 
     // 找第个URL
     const findFirstUrl = (node) => {
@@ -124,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 获取根域名的函数
     const getRootDomain = (hostname) => {
-        // 检查是否是IP地址（包括IPv4和IPv6）
+        // 检是否是IP地址（包括IPv4和IPv6）
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
         const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
@@ -138,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 如域名以数字开头，检查是否为纯数字和点组成的IP地址形式
+        // 如域名以数字开，检查否为纯数字和点组的IP地址形式
         if (/^\d/.test(hostname)) {
             // 如果看起来像IP地址格式，直接返回
             if (hostname.split('.').every(part => !isNaN(part))) {
@@ -163,11 +254,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 查最后两部分是否构成特殊顶级域名
         const lastTwoParts = parts.slice(-2).join('.');
         if (specialDomains[lastTwoParts]) {
-            // 如果是特顶级域名，返回后三部分
+            // 如果是特顶级域名，返回后部分
             return parts.slice(-3).join('.');
         }
 
-        // 对于其他情况，返回最后两部分
+        // 对于其他情况，返回��后两部分
         return parts.slice(-2).join('.');
     };
 
@@ -191,7 +282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
-                    // 移除可能的端号和空（确保再次查
+                    // 移除可能的号和空（确保再次查
                     hostname = hostname.split(':')[0];
                 } else {
                     // 如果正则匹配失败，尝试使用 URL 对
@@ -212,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 除可能的端号和空格（确保再次查）
                 hostname = hostname.split(':')[0].trim();
 
-                // 果 chrome://  edge:// 特殊协议直接使用完整名作为根名
+                // 果 chrome://  edge:// 特殊协议直接使用整名作为根名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     if (!groups[rootDomain]) {
@@ -230,7 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 let rootDomain;
-                // 检查是否是IP地址（包括IPv4和IPv6）
+                // 检查是否是IP地址（包括IPv4和IPv6
                 const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
                 const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
@@ -253,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // 确定根域名
                     if (parts.length === 1) {
-                        // 一级域
+                        // 一���域
                         rootDomain = hostname;
                     } else {
                         // 检查是否是特殊顶域名
@@ -262,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域
                             rootDomain = parts.slice(-3).join('.');
                         } else {
-                            // 使用最后两部分作为根域名（如 bilibili.com）
+                            // 使用最后两部分作为根名（如 bilibili.com）
                             rootDomain = parts.slice(-2).join('.');
                         }
                     }
@@ -348,67 +439,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 构建树形数据
     const buildTreeData = (groups) => {
-        let treeData = {
+        const treeData = {
             id: 'root',
             label: t('title'),
-            children: [],
-            collapsed: false
+            children: []
         };
 
-        if (groupBySelect.value === 'date') {
-            // 获取所有月份并排序
-            const monthKeys = Object.keys(groups).sort((a, b) => {
-                if (a === 'earlier') return 1;
-                if (b === 'earlier') return -1;
-                return b.localeCompare(a);
-            });
-
-            monthKeys.forEach(monthKey => {
-                const monthData = groups[monthKey];
-                const monthNode = {
-                    id: monthKey,
-                    label: monthData.isEarlier ? t('earlier') : new Date(monthData.year, monthData.month - 1).toLocaleDateString(getCurrentLanguage(), { year: 'numeric', month: 'long' }),
-                    children: [],
-                    collapsed: true
-                };
-
-                // 获取所有期并排序
-                const days = Object.keys(monthData.days).sort((a, b) => b - a);
-                days.forEach(day => {
-                    const items = monthData.days[day];
-                    const dayNode = {
-                        id: `${monthKey}-day-${day}`,
-                        label: new Date(monthData.year, monthData.month - 1, day).toLocaleDateString(getCurrentLanguage(), { day: 'numeric', weekday: 'long' }) + ` (${items.length})`,
-                        children: items.map(item => ({
-                            id: String(item.id),
-                            label: item.title || item.url,
-                            url: item.url,
-                            isLeaf: true
-                        })),
-                        collapsed: true
-                    };
-                    monthNode.children.push(dayNode);
-                });
-
-                // 更新月份节点的标签，添加记录总数
-                const totalItems = monthNode.children.reduce((sum, day) => sum + day.children.length, 0);
-                monthNode.label = monthData.isEarlier ?
-                    `${t('earlier')} (${totalItems})` :
-                    `${new Date(monthData.year, monthData.month - 1).toLocaleDateString(getCurrentLanguage(), { year: 'numeric', month: 'long' })} (${totalItems})`;
-
-                treeData.children.push(monthNode);
-            });
-        } else {
+        if (groupBySelect.value === 'domain') {
             // 域名分组的处理
             const entries = Object.entries(groups);
 
-            // 按照域名首字母排
+            // 根据选择的排序方式进行排序
             entries.sort((a, b) => {
-                // 特殊处"其他"分组，始终放在最后
+                // 特殊处理"其他"分组，始终放在最后
                 if (a[0] === t('other')) return 1;
                 if (b[0] === t('other')) return -1;
-                // 其他情况按照域名字母排序
-                return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+
+                let result;
+                if (sortBy === 'name') {
+                    // 按域名字母排序
+                    result = a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+                } else {
+                    // 按数量排序
+                    result = b[1].totalCount - a[1].totalCount;
+                }
+                return sortDirection === 'asc' ? result : -result;
             });
 
             entries.forEach(([rootDomain, domainData]) => {
@@ -416,40 +471,64 @@ document.addEventListener('DOMContentLoaded', async () => {
                     id: rootDomain,
                     label: `${rootDomain} (${domainData.totalCount})`,
                     children: [],
-                    collapsed: true,  // 默认折叠根节点
+                    collapsed: true,
                     isRoot: true
                 };
 
                 // 对子域名进行排序
-                const subdomainEntries = Object.entries(domainData.subdomains)
-                    .sort((a, b) => b[1].length - a[1].length);
+                const subdomainEntries = Object.entries(domainData.subdomains);
+                subdomainEntries.sort((a, b) => {
+                    let result;
+                    if (sortBy === 'name') {
+                        result = a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+                    } else {
+                        result = b[1].length - a[1].length;
+                    }
+                    return sortDirection === 'asc' ? result : -result;
+                });
 
                 subdomainEntries.forEach(([subdomain, items]) => {
-                    // 如果子域名和根域名相同，直接加叶子节点
                     if (subdomain === rootDomain) {
-                        items.sort((a, b) => b.lastVisitTime - a.lastVisitTime)
-                            .forEach(item => {
-                                rootNode.children.push({
-                                    id: String(item.id),
-                                    label: item.title || item.url,
-                                    url: item.url,
-                                    isLeaf: true
-                                });
+                        // 对叶子节点进行排序
+                        const sortedItems = [...items].sort((a, b) => {
+                            let result;
+                            if (sortBy === 'name') {
+                                result = (a.title || a.url).toLowerCase().localeCompare((b.title || b.url).toLowerCase());
+                            } else {
+                                result = b.visitCount - a.visitCount;
+                            }
+                            return sortDirection === 'asc' ? result : -result;
+                        });
+
+                        sortedItems.forEach(item => {
+                            rootNode.children.push({
+                                id: String(item.id),
+                                label: item.title || item.url,
+                                url: item.url,
+                                isLeaf: true
                             });
+                        });
                     } else {
-                        // 否则创域名节点
                         const subdomainNode = {
                             id: subdomain,
                             label: `${subdomain} (${items.length})`,
                             children: items
-                                .sort((a, b) => b.lastVisitTime - a.lastVisitTime)
+                                .sort((a, b) => {
+                                    let result;
+                                    if (sortBy === 'name') {
+                                        result = (a.title || a.url).toLowerCase().localeCompare((b.title || b.url).toLowerCase());
+                                    } else {
+                                        result = b.visitCount - a.visitCount;
+                                    }
+                                    return sortDirection === 'asc' ? result : -result;
+                                })
                                 .map(item => ({
                                     id: String(item.id),
                                     label: item.title || item.url,
                                     url: item.url,
                                     isLeaf: true
                                 })),
-                            collapsed: true,  // 默认折叠子域名节点
+                            collapsed: true,
                             isSubdomain: true
                         };
                         rootNode.children.push(subdomainNode);
@@ -495,7 +574,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const childNode = graph.findById(childData.id);
                         if (childNode) {
                             if (nodeModel.collapsed) {
-                                // 如果父节点是折叠状态，隐藏子节点
+                                // 如果父节点是折叠态，隐藏子节点
                                 graph.hideItem(childNode);
                                 // 隐藏连接到子节点的边
                                 graph.getEdges().forEach(edge => {
@@ -523,7 +602,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        // 遍历所有节点
+        // 遍历所有节
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
@@ -556,7 +635,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 context.font = '13px Arial';
                 const textWidth = context.measureText(cfg.label).width;
 
-                // 计算节点宽度：文本宽度 + 左右padding + 按钮区域 + 图标区域
+                // 计算节点宽度：文本宽度 + 右padding + 按钮区域 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
                 const iconSpace = (isLeaf || groupBySelect.value === 'domain') ? 24 : 0; // 在域名分组视图中所有节点都预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
@@ -565,7 +644,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 获取favicon URL
                 let faviconUrl = '';
                 if (cfg.id === 'root') {
-                    faviconUrl = `chrome-extension://${chrome.runtime.id}/icons/icon48.png`;  // 使用48x48的图标
+                    faviconUrl = `chrome-extension://${chrome.runtime.id}/icons/icon48.png`;  // 用48x48的图标
                 } else if (groupBySelect.value === 'domain') {  // 在域名分组视图中显示favicon
                     if (isLeaf && cfg.url) {
                         faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16`;
@@ -600,7 +679,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     displayText = displayText.slice(0, start) + '...';
                 }
 
-                // 获取当前主题的颜色方案
+                // ���取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
 
                 // 选择颜色方案
@@ -666,7 +745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-                // 绘制文本
+                // 绘文本
                 group.addShape('text', {
                     attrs: {
                         text: displayText,
@@ -725,7 +804,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-                // 添加删除���钮
+                // 添加删除按钮
                 group.addShape('circle', {
                     attrs: {
                         x: width - 24,
@@ -845,7 +924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             : groupByDate(historyItems);
 
         const treeData = buildTreeData(groups);
-        treeDataCache = treeData;  // 缓存树形数据
+        treeDataCache = treeData;  // 存树形数据
 
         // 加载数据初始化
         graph.data(treeData);
@@ -916,7 +995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             // 保持子节点折叠状态
                             if (childNode.getModel().collapsed) {
-                                // 如果子节点是折叠态，确保其子节点保持
+                                // 如果子节点是折叠态，确保其子点保
                                 const hideCollapsedChildren = (node) => {
                                     if (node.children) {
                                         node.children.forEach(grandChild => {
@@ -958,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const matrix = graph.getGroup().getMatrix();
 
                     if (model.isLeaf) {
-                        // 删除单个页面记录
+                        // 删除个页面记录
                         await chrome.history.deleteUrl({ url: model.url });
 
                         // 父点数据
@@ -975,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 label: newLabel
                             });
 
-                            // 如果节点没有子节点了，删除父节点
+                            // 如果点没有子节点了，删除父节点
                             if (count === 0) {
                                 const grandParentNode = graph.findById(parentNode.get('parent'));
                                 if (grandParentNode) {
@@ -1020,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             graph.updateItem(parentNode, parentModel);
                         }
 
-                        // 移除当前节点及其所有子节点
+                        // 除当前节点及其所有子节点
                         const removeNodeAndChildren = (rootNode) => {
                             const queue = [rootNode];
                             const processedNodes = new Set();
@@ -1079,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const restoreExpandState = (treeData) => {
                         if (treeData.children) {
                             treeData.children.forEach(node => {
-                                // 如果节点ID在展开集合中，或者它是展开节点的父节点，则设置为展开状态
+                                // 如果节点ID在展开集合或者它是展开节点的父节点，则设置为展开状态
                                 if (expandedNodeIds.has(node.id) || expandedParentIds.has(node.id)) {
                                     node.collapsed = false;
                                 }
@@ -1181,7 +1260,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // 监听分组方式变化
-        groupBySelect.addEventListener('change', updateView);
+        groupBySelect.addEventListener('change', () => {
+            const sortControls = document.getElementById('sortControls');
+            if (sortControls) {
+                sortControls.style.display = groupBySelect.value === 'domain' ? 'flex' : 'none';
+            }
+            updateView();
+        });
 
         // 监听窗口大小变化
         window.addEventListener('resize', () => {
@@ -1193,6 +1278,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 初始化搜索功能
         initializeSearch();
+
+        // Initialize sort controls
+        const sortSelect = document.getElementById('sortSelect');
+        const sortDirectionBtn = document.getElementById('sortDirection');
+
+        function updateSortControls() {
+            if (sortSelect) {
+                const currentValue = sortSelect.value;
+                sortSelect.innerHTML = `
+                    <option value="name">${t('sortByName')}</option>
+                    <option value="count">${t('sortByCount')}</option>
+                `;
+                sortSelect.value = currentValue || 'name';
+            }
+        }
+
+        // Add sort controls event listeners
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                sortBy = e.target.value;
+                updateView();
+            });
+        }
+
+        if (sortDirectionBtn) {
+            sortDirectionBtn.addEventListener('click', () => {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                sortDirectionBtn.textContent = sortDirection === 'asc' ? '↑' : '↓';
+                updateView();
+            });
+        }
+
+        // Add language change listener
+        window.addEventListener('languageChanged', updateSortControls);
+
+        // Initial update
+        updateSortControls();
     };
 
     function initializeSearch() {
@@ -1219,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 监听搜索按钮点击
         searchButton.addEventListener('click', executeSearch);
 
-        // 导航按钮点击事件
+        // 导航按钮点击事
         searchPrev.addEventListener('click', () => {
             navigateSearch('prev');
         });
@@ -1230,7 +1352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function performSearch(query) {
-        // 除之前的搜索结果
+        // 除之前搜索结果
         clearSearchHighlights();
         searchResults = [];
         currentSearchIndex = -1;
@@ -1251,12 +1373,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const url = nodeData.url || '';
             const isMatched = label.toLowerCase().includes(queryLower) || url.toLowerCase().includes(queryLower);
 
-            // 果当节点匹配，记录完整路径
+            // 果当节点匹配，记录完路径
             if (isMatched) {
                 matchedPaths.push([...currentPath, nodeData]);
             }
 
-            // 继续搜索子节点论是否叠
+            // 继续搜索节点论是否叠
             if (nodeData.children) {
                 nodeData.children.forEach(child => {
                     searchNode(child, [...currentPath, nodeData]);
@@ -1264,20 +1386,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // 从缓存的树形数据开始搜索
+        // 从缓存的树形数据始搜索
         if (treeDataCache.children) {
             treeDataCache.children.forEach(child => {
                 searchNode(child, []);
             });
         }
 
-        // 如果没有匹配结果，直接返回
+        // 如果没匹配结果，直接返回
         if (matchedPaths.length === 0) {
             updateSearchInfo();
             return;
         }
 
-        // 找到最大度
+        // 找到最大��
         const maxDepth = Math.max(...matchedPaths.map(path => path.length));
 
         // 按深度逐层展开节点
@@ -1322,19 +1444,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // 如果当前深度有节点被展开，更新布局
+            // 如果当前度有节点被展开，更新布局
             if (hasExpandedNodes) {
                 graph.layout();
                 graph.paint();
             }
 
-            // 如果还有更深的层级继续展开
+            // 果还有更深的层级继续展开
             if (depth < maxDepth) {
                 setTimeout(() => {
                     expandNodesAtDepth(depth + 1);
                 }, 100); // 延迟100ms展开下一层
             } else {
-                // 所有层级都展开完成后，高亮匹配节点
+                // 所有层级都展开完成后亮匹配节点
                 highlightMatchedNodes();
             }
         }
@@ -1452,7 +1574,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const scaleX = viewportWidth / contentWidth;
         const scaleY = viewportHeight / contentHeight;
-        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大缩放级别为1
+        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大缩放级为1
 
         // 先缩放到合适的级别
         graph.zoomTo(scale, {
@@ -1502,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearSearchFocus() {
         graph.findAll('node', node => {
             const group = node.get('group');
-            // 移除焦点高亮
+            // 移除焦点亮
             const shapes = group.get('children').filter(shape =>
                 shape.get('name') === 'search-focus'
             );
@@ -1525,7 +1647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         if (typeof G6 === 'undefined') {
-            throw new Error('G6 库未能正确���载');
+            throw new Error('G6 库未能正确载');
         }
 
         // 初始加载

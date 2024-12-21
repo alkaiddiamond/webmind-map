@@ -14,7 +14,9 @@ const i18n = {
         deleteError: '删除历史记录失败',
         loadError: '加载出错: {error}',
         other: '其他',
-        language: '语言'
+        language: '语言',
+        sortByName: '按名称排序',
+        sortByCount: '按数量排序'
     },
     'en': {
         title: 'WebMind Map',
@@ -31,7 +33,9 @@ const i18n = {
         deleteError: 'Failed to delete history record',
         loadError: 'Loading Error: {error}',
         other: 'Others',
-        language: 'Language'
+        language: 'Language',
+        sortByName: 'Sort by Name',
+        sortByCount: 'Sort by Count'
     }
 };
 

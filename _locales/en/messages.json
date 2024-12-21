@@ -1,0 +1,94 @@
+{
+    "appName": {
+        "message": "WebMind Map",
+        "description": "Extension name"
+    },
+    "appDesc": {
+        "message": "Display browsing history as a mind map",
+        "description": "Extension description"
+    },
+    "title": {
+        "message": "Browsing History Mind Map",
+        "description": "Page title"
+    },
+    "groupByDomain": {
+        "message": "Group by Domain",
+        "description": "Domain grouping option"
+    },
+    "groupByDate": {
+        "message": "Group by Date",
+        "description": "Date grouping option"
+    },
+    "toggleTheme": {
+        "message": "Toggle Theme",
+        "description": "Theme toggle button"
+    },
+    "searchPlaceholder": {
+        "message": "Search history...",
+        "description": "Search input placeholder"
+    },
+    "searchButton": {
+        "message": "Search",
+        "description": "Search button"
+    },
+    "prevMatch": {
+        "message": "Previous match",
+        "description": "Previous match button"
+    },
+    "nextMatch": {
+        "message": "Next match",
+        "description": "Next match button"
+    },
+    "noMatch": {
+        "message": "No matches found",
+        "description": "No match message"
+    },
+    "matchCount": {
+        "message": "Match $current$ of $total$",
+        "description": "Match count",
+        "placeholders": {
+            "current": {
+                "content": "$1",
+                "example": "1"
+            },
+            "total": {
+                "content": "$2",
+                "example": "5"
+            }
+        }
+    },
+    "deleteConfirm": {
+        "message": "Are you sure you want to delete this history item?",
+        "description": "Delete confirmation"
+    },
+    "deleteError": {
+        "message": "Error deleting history",
+        "description": "Delete error message"
+    },
+    "loadError": {
+        "message": "Load error: $error$",
+        "description": "Load error message",
+        "placeholders": {
+            "error": {
+                "content": "$1",
+                "example": "Error message"
+            }
+        }
+    },
+    "other": {
+        "message": "Other",
+        "description": "Other group"
+    },
+    "earlier": {
+        "message": "Earlier",
+        "description": "Earlier history"
+    },
+    "sortByName": {
+        "message": "Sort by Name",
+        "description": "Sort by name option"
+    },
+    "sortByCount": {
+        "message": "Sort by Count",
+        "description": "Sort by count option"
+    }
+} 

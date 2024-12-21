@@ -10,19 +10,18 @@
   <body>
     <div class="background"></div>
     <div class="left-controls">
-      <select id="groupBy">
-        <option value="domain">按域名分组</option>
-        <option value="date">按日期分组</option>
-      </select>
+      <div class="group-sort-container">
+        <select id="groupBy"></select>
+        <div id="sortControls" style="display: none">
+          <select id="sortSelect"></select>
+          <button id="sortDirection" style="margin-left: 5px">↑</button>
+        </div>
+      </div>
       <div class="search-container">
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="搜索URL或标题，按回车执行..."
-        />
-        <button id="searchButton" title="搜索">🔍</button>
-        <button id="searchPrev" title="上一个匹配项">↑</button>
-        <button id="searchNext" title="下一个匹配项">↓</button>
+        <input type="text" id="searchInput" />
+        <button id="searchButton">🔍</button>
+        <button id="searchPrev">↑</button>
+        <button id="searchNext">↓</button>
         <span id="searchInfo"></span>
       </div>
     </div>
