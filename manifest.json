@@ -12,7 +12,8 @@
   "permissions": [
     "history",
     "tabs",
-    "favicon"
+    "favicon",
+    "storage"
   ],
   "action": {
     "default_title": "WebMind Map",

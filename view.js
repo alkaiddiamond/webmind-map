@@ -26,18 +26,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 初始化分组选择器
     if (groupBySelect) {
+        // 加载保存的分组选择
+        try {
+            const result = await chrome.storage.local.get('groupBy');
+            if (result.groupBy) {
+                groupBySelect.value = result.groupBy;
+                // 更新排序控件的显示状态
+                const sortControls = document.getElementById('sortControls');
+                if (sortControls) {
+                    sortControls.style.display = result.groupBy === 'domain' ? 'flex' : 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading groupBy preference:', error);
+        }
+
         groupBySelect.addEventListener('change', async () => {
             // 更新排序控件的显示状态
             const sortControls = document.getElementById('sortControls');
             if (sortControls) {
                 sortControls.style.display = groupBySelect.value === 'domain' ? 'flex' : 'none';
             }
+            // 保存分组选择
+            try {
+                await chrome.storage.local.set({ groupBy: groupBySelect.value });
+            } catch (error) {
+                console.error('Error saving groupBy preference:', error);
+            }
             // 更新视图
             await updateView();
         });
     }
 
-    // 初始化排序控件
+    // 初始排序控件
     if (sortSelect) {
         sortSelect.value = sortBy;
         sortSelect.addEventListener('change', (e) => {
@@ -61,6 +82,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 加载历史记录
     const loadHistoryItems = async () => {
         try {
+            // 先加载保存的分组选择
+            const result = await chrome.storage.local.get('groupBy');
+            if (result.groupBy) {
+                groupBySelect.value = result.groupBy;
+                // 更新排序控件的显示状态
+                const sortControls = document.getElementById('sortControls');
+                if (sortControls) {
+                    sortControls.style.display = result.groupBy === 'domain' ? 'flex' : 'none';
+                }
+            }
+
             // 计算时间范围
             const endTime = Date.now();
             const startTime = 0;  // 从最早的记录开始
@@ -112,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         isProcessingFavicons = false;
     };
 
-    // 添加到 favicon 加载队列
+    // 添加 favicon 加载队列
     const queueFaviconLoad = (node, callback) => {
         faviconLoadQueue.push({ node, callback });
         if (!isProcessingFavicons) {
@@ -141,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortSelect.value = currentValue || 'name';
         }
 
-        // ���新其他控件
+        // 更新其他控件
         themeToggle.textContent = t('toggleTheme');
         searchInput.placeholder = t('searchPlaceholder');
         searchButton.title = t('searchButton');
@@ -254,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 如果域名以数字开头检查是否为纯数字和点组成的IP地址形式
+        // 如果域名以数字开头查是否为纯数字和点组的IP地址形
         if (/^\d/.test(hostname)) {
             // 如果看起来像IP地址格式，直接返回
             if (hostname.split('.').every(part => !isNaN(part))) {
@@ -411,7 +443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return groups;
     };
 
-    // 按日期分组
+    // 按期分组
     const groupByDate = (items) => {
         const groups = {};
 
@@ -472,7 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 批量检查favicons
+    // 批量查favicons
     async function batchCheckFavicons(urls) {
         const uncheckedUrls = urls.filter(url => !faviconCache.has(url));
         const checkPromises = uncheckedUrls.map(async url => {
@@ -509,7 +541,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 批量检查所有 URL 的 favicon
         await batchCheckFavicons(leafData.map(data => data.url));
 
-        // 统计效的 favicon
+        // 统计有效的 favicon
         const faviconStats = new Map();
         for (const data of leafData) {
             if (faviconCache.get(data.url)) {
@@ -614,7 +646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let subFaviconUrl = '';
 
                 if (validItems.length > 0) {
-                    // 对于子域名，直接使用近���问的有效URL的favicon
+                    // 对子域名，直接使用近问的有效URL的favicon
                     const sortedItems = [...validItems].sort((a, b) => b.lastVisitTime - a.lastVisitTime);
                     const bestUrl = sortedItems[0].url;
                     if (faviconCache.get(bestUrl)) {
@@ -665,7 +697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return '';
         }
 
-        // 对于非叶子节点，查找最佳favicon
+        // 对于非叶子节点，查最佳favicon
         const bestUrl = await findBestFavicon(node);
         if (bestUrl) {
             return `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(bestUrl)}&size=16`;
@@ -686,7 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 域名分组处理
             const entries = Object.entries(groups);
 
-            // 根据选择的序方式进行排序
+            // 根据选择的序方进行序
             entries.sort((a, b) => {
                 // 特殊处理"其他"分组，始终放在最后
                 if (a[0] === t('other')) return 1;
@@ -1076,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-                // 如果不是子节点，添加展开/折叠图标
+                // 如果不是子节点，加展开/折叠图标
                 if (!isLeaf && children && children.length) {
                     const iconBox = group.addShape('circle', {
                         attrs: {
@@ -1254,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 初始化折叠状态
+        // 初始化折叠状���
         initializeCollapsedState(graph, treeData);
 
         // 绑定事件监听器
@@ -1512,6 +1544,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // 在 DOMContentLoaded 事件处理函数中，loadHistoryItems 之前添加
+    // 初始化搜索功能
+    initializeSearch();
+
+    // 修改搜索相关函数
     function initializeSearch() {
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
@@ -1546,8 +1583,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function performSearch(query) {
-        // 清除之前的搜索结果
+    async function performSearch(query) {
         clearSearchHighlights();
         searchResults = [];
         currentSearchIndex = -1;
@@ -1558,22 +1594,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const queryLower = query.toLowerCase();
-
-        // 存储所有匹配的节点和它的路径
         const matchedPaths = [];
 
-        // 归搜索函数
+        // 递归搜索函数
         function searchNode(nodeData, currentPath = []) {
             const label = nodeData.label || '';
             const url = nodeData.url || '';
             const isMatched = label.toLowerCase().includes(queryLower) || url.toLowerCase().includes(queryLower);
 
-            // 如果当前节点匹配，记录完整路径
-            if (isMatched) {
+            if (isMatched && nodeData.isLeaf) {  // 只匹配叶子节点
                 matchedPaths.push([...currentPath, nodeData]);
             }
 
-            // 继续搜索节点，无论是否折叠
             if (nodeData.children) {
                 nodeData.children.forEach(child => {
                     searchNode(child, [...currentPath, nodeData]);
@@ -1588,130 +1620,139 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // 如果没有匹配结果，直接返回
         if (matchedPaths.length === 0) {
             updateSearchInfo();
             return;
         }
 
-        // 找到最大深度
-        const maxDepth = Math.max(...matchedPaths.map(path => path.length));
+        // 展开匹配路径上的所有节点
+        matchedPaths.forEach(path => {
+            // 第一次展开
+            for (let i = 0; i < path.length - 1; i++) {
+                const nodeData = path[i];
+                const node = graph.findById(nodeData.id);
+                if (node) {
+                    const model = node.getModel();
+                    if (model.collapsed) {
+                        model.collapsed = false;
+                        graph.updateItem(node, { collapsed: false });
 
-        // 按深度逐层展开节点
-        function expandNodesAtDepth(depth) {
-            let hasExpandedNodes = false;
+                        // 更新展开/折叠图标
+                        const group = node.getContainer();
+                        const icon = group.find(element => element.get('name') === 'collapse-text');
+                        if (icon) {
+                            icon.attr('text', '-');
+                        }
 
-            matchedPaths.forEach(path => {
-                if (path.length >= depth) {
-                    const nodeData = path[depth - 1];
-                    const node = graph.findById(nodeData.id);
-                    if (node) {
-                        const model = node.getModel();
-                        if (model.collapsed) {
-                            hasExpandedNodes = true;
-                            model.collapsed = false;
-                            graph.updateItem(node, {
-                                collapsed: false
+                        // 显示子节点和边
+                        if (model.children) {
+                            model.children.forEach(childData => {
+                                const childNode = graph.findById(childData.id);
+                                if (childNode) {
+                                    graph.showItem(childNode);
+                                    graph.getEdges().forEach(edge => {
+                                        if (edge.getTarget().get('id') === childData.id) {
+                                            graph.showItem(edge);
+                                        }
+                                    });
+                                }
                             });
-
-                            // 更新展开/折叠图标
-                            const group = node.getContainer();
-                            const icon = group.find(element => element.get('name') === 'collapse-text');
-                            if (icon) {
-                                icon.attr('text', '-');
-                            }
-
-                            // 显示当前节点
-                            graph.showItem(node);
-
-                            // 显示到下一层点的边
-                            if (depth < path.length) {
-                                const nextNodeData = path[depth];
-                                graph.getEdges().forEach(edge => {
-                                    if (edge.getSource().get('id') === nodeData.id &&
-                                        edge.getTarget().get('id') === nextNodeData.id) {
-                                        graph.showItem(edge);
-                                    }
-                                });
-                            }
                         }
                     }
                 }
-            });
-
-            // 如果当前深度有节点被展开，更新布局
-            if (hasExpandedNodes) {
-                graph.layout();
-                graph.paint();
             }
+        });
 
-            // 如果还有更深的层级，继续展开
-            if (depth < maxDepth) {
-                setTimeout(() => {
-                    expandNodesAtDepth(depth + 1);
-                }, 100);
-            } else {
-                // 所有层级都展开完成后，高亮匹配节点
-                highlightMatchedNodes();
+        // 更新布局
+        graph.layout();
+
+        // 第二次展开
+        matchedPaths.forEach(path => {
+            for (let i = 0; i < path.length - 1; i++) {
+                const nodeData = path[i];
+                const node = graph.findById(nodeData.id);
+                if (node) {
+                    const model = node.getModel();
+                    if (model.collapsed) {
+                        model.collapsed = false;
+                        graph.updateItem(node, { collapsed: false });
+
+                        // 更新展开/折叠图标
+                        const group = node.getContainer();
+                        const icon = group.find(element => element.get('name') === 'collapse-text');
+                        if (icon) {
+                            icon.attr('text', '-');
+                        }
+
+                        // 显示子节点和边
+                        if (model.children) {
+                            model.children.forEach(childData => {
+                                const childNode = graph.findById(childData.id);
+                                if (childNode) {
+                                    graph.showItem(childNode);
+                                    graph.getEdges().forEach(edge => {
+                                        if (edge.getTarget().get('id') === childData.id) {
+                                            graph.showItem(edge);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                }
             }
-        }
+        });
+
+        // 再次更新布局
+        graph.layout();
 
         // 高亮匹配的节点
-        function highlightMatchedNodes() {
-            searchResults = matchedPaths.map(path => {
-                const targetNode = graph.findById(path[path.length - 1].id);
-                if (targetNode) {
-                    // 确保点
-                    graph.showItem(targetNode);
+        searchResults = matchedPaths.map(path => {
+            const targetNode = graph.findById(path[path.length - 1].id);
+            if (targetNode) {
+                // 确保节点可见
+                graph.showItem(targetNode);
 
-                    // 添加高亮效果
-                    const bbox = targetNode.getBBox();
-                    targetNode.get('group').addShape('rect', {
-                        attrs: {
-                            x: 0,
-                            y: 0,
-                            width: bbox.width,
-                            height: bbox.height,
-                            fill: 'transparent',
-                            stroke: '#3b82f6',
-                            lineWidth: 2,
-                            radius: 8
-                        },
-                        name: 'search-highlight'
-                    });
-                    return targetNode;
-                }
-                return null;
-            }).filter(Boolean);
-
-            // 更新搜索信息
-            updateSearchInfo();
-
-            // 如果有搜索结果跳转到第一个
-            if (searchResults.length > 0) {
-                currentSearchIndex = 0;
-                focusSearchResult();
+                // 添加高亮效果
+                const bbox = targetNode.getBBox();
+                targetNode.get('group').addShape('rect', {
+                    attrs: {
+                        x: 0,
+                        y: 0,
+                        width: bbox.width,
+                        height: bbox.height,
+                        fill: 'transparent',
+                        stroke: '#3b82f6',
+                        lineWidth: 2,
+                        radius: 8
+                    },
+                    name: 'search-highlight'
+                });
+                return targetNode;
             }
-        }
+            return null;
+        }).filter(Boolean);
 
-        // 开始从第一层展开
-        expandNodesAtDepth(1);
+        // 更新搜索信息
+        updateSearchInfo();
+
+        // 如果有搜索结果，跳转到第一个
+        if (searchResults.length > 0) {
+            currentSearchIndex = 0;
+            focusSearchResult();
+        }
     }
 
     function focusSearchResult() {
         const node = searchResults[currentSearchIndex];
         if (!node) return;
 
-        // 获取节点的位置信息
-        const bbox = node.getBBox();
-        const group = node.get('group');
-
         // 清除之前的焦点样式
-        const oldFocus = group.findAll(element => element.get('name') === 'search-focus');
-        oldFocus.forEach(shape => shape.remove());
+        clearSearchFocus();
 
-        // 添加焦点样式
-        group.addShape('rect', {
+        // 添加新的焦点样式
+        const bbox = node.getBBox();
+        node.get('group').addShape('rect', {
             attrs: {
                 x: 0,
                 y: 0,
@@ -1727,57 +1768,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             name: 'search-focus'
         });
 
-        // 获取当前节点的所有父节点
-        const getParentNodes = (node) => {
-            const parents = [];
-            let current = node;
-            while (current.get('parent')) {
-                const parent = graph.findById(current.get('parent'));
-                if (parent) {
-                    parents.push(parent);
-                    current = parent;
-                } else {
-                    break;
-                }
-            }
-            return parents;
-        };
-
-        // 计算包含当前节点及其父节点的边框
-        const parentNodes = getParentNodes(node);
-        const allNodes = [node, ...parentNodes];
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-        allNodes.forEach(n => {
-            const box = n.getBBox();
-            const matrix = n.get('group').getMatrix();
-            const x = matrix[6];
-            const y = matrix[7];
-
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + box.width);
-            maxY = Math.max(maxY, y + box.height);
-        });
-
-        // 计算合适的缩放级别
-        const padding = 100;  // 边距
-        const viewportWidth = graph.get('width');
-        const viewportHeight = graph.get('height');
-        const contentWidth = maxX - minX + padding * 2;
-        const contentHeight = maxY - minY + padding * 2;
-
-        const scaleX = viewportWidth / contentWidth;
-        const scaleY = viewportHeight / contentHeight;
-        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大放大级别为1
-
-        // 先缩放到合适的级别
-        graph.zoomTo(scale, {
-            x: (minX + maxX) / 2,
-            y: (minY + maxY) / 2
-        });
-
-        // 然后使用 focusItem 示当前节点
+        // 聚焦到当前节点
         graph.focusItem(node, true, {
             easing: 'easeCubic',
             duration: 300,
@@ -1830,6 +1821,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateSearchInfo() {
+        const searchInfo = document.getElementById('searchInfo');
         if (searchResults.length === 0) {
             searchInfo.textContent = t('noMatch');
         } else {
