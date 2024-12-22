@@ -31,8 +31,8 @@
     "resources": ["lib/*", "_favicon/*"],
     "matches": ["<all_urls>"]
   }],
-  "author": "WebMind Map Team",
-  "homepage_url": "https://github.com/yourusername/browser-history-mindmap-extension",
+  "author": "Alkaiddiamond",
+  "homepage_url": "https://github.com/alkaiddiamond/webmind-map",
   "minimum_chrome_version": "88",
   "offline_enabled": true,
   "content_security_policy": {
