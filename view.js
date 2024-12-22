@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortSelect.value = currentValue || 'name';
         }
 
-        // 更新其他控件
+        // ���新其他控件
         themeToggle.textContent = t('toggleTheme');
         searchInput.placeholder = t('searchPlaceholder');
         searchButton.title = t('searchButton');
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
 
-                // 使用正则表达式处理数字开头的域��和IP地址
+                // 使用正则表达式处理数字开头的域和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 批量检查所有 URL 的 favicon
         await batchCheckFavicons(leafData.map(data => data.url));
 
-        // 统计��效的 favicon
+        // 统计效的 favicon
         const faviconStats = new Map();
         for (const data of leafData) {
             if (faviconCache.get(data.url)) {
@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let subFaviconUrl = '';
 
                 if (validItems.length > 0) {
-                    // 对于子域名，直接使用近访问的有效URL的favicon
+                    // 对于子域名，直接使用近���问的有效URL的favicon
                     const sortedItems = [...validItems].sort((a, b) => b.lastVisitTime - a.lastVisitTime);
                     const bestUrl = sortedItems[0].url;
                     if (faviconCache.get(bestUrl)) {
@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return sortDirection === 'desc' ? -result : result;
             });
 
-            // ��待所有 favicon 处理完成
+            // 待所有 favicon 处理完成
             const processedEntries = await processFavicons(entries);
 
             // 构建树形数据
@@ -1305,8 +1305,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // 处理展开/折叠
-            handleNodeCollapse(item, model);
+            // 处理展开/折叠按钮点击
+            if (targetName === 'collapse-text' || targetName === 'icon-box') {
+                handleNodeCollapse(item, model);
+                return;
+            }
         });
     };
 
@@ -1320,7 +1323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         graph.removeItem(item);
     };
 
-    // ���理非叶子节点删除
+    // 处理非叶子节点删除
     const handleNonLeafNodeDeletion = async (item, model) => {
         const deletePromises = [];
         collectUrlsToDelete(model, deletePromises);
