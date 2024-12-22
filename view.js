@@ -24,6 +24,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sortSelect = document.getElementById('sortSelect');
     const sortDirectionBtn = document.getElementById('sortDirection');
 
+    // 初始化分组选择器
+    if (groupBySelect) {
+        groupBySelect.addEventListener('change', async () => {
+            // 更新排序控件的显示状态
+            const sortControls = document.getElementById('sortControls');
+            if (sortControls) {
+                sortControls.style.display = groupBySelect.value === 'domain' ? 'flex' : 'none';
+            }
+            // 更新视图
+            await updateView();
+        });
+    }
+
     // 初始化排序控件
     if (sortSelect) {
         sortSelect.value = sortBy;
@@ -128,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortSelect.value = currentValue || 'name';
         }
 
-        // 更新其他控件
+        // ���新其他控件
         themeToggle.textContent = t('toggleTheme');
         searchInput.placeholder = t('searchPlaceholder');
         searchButton.title = t('searchButton');
@@ -241,7 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hostname;
         }
 
-        // 如果域名以数字开头，检查是否为纯数字和点组成的IP地址形式
+        // 如果域名以数字开头检查是否为纯数字和点组成的IP地址形式
         if (/^\d/.test(hostname)) {
             // 如果看起来像IP地址格式，直接返回
             if (hostname.split('.').every(part => !isNaN(part))) {
@@ -315,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 移除可能的端口号和空格
                 hostname = hostname.split(':')[0].trim();
 
-                // 如果是 chrome:// 或 edge:// 等特殊协议，直接使用整个域名作为根域名
+                // 如果是 chrome:// 或 edge:// 等特殊协议，直接使用整个域���作为根域名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     if (!groups[rootDomain]) {
@@ -390,7 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 如果有无法解析的 URL，添加"其他"分组
+        // 如果有无法解析的 URL，加"其他"分组
         if (otherGroup.totalCount > 0) {
             groups[t('other')] = otherGroup;
         }
@@ -401,18 +414,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 按日期分组
     const groupByDate = (items) => {
         const groups = {};
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-
-        // 创建最近12个月的日期范围
-        const monthRanges = [];
-        for (let i = 0; i < 12; i++) {
-            const date = new Date(currentYear, currentMonth - i, 1);
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            monthRanges.push({ year, month });
-        }
 
         items.forEach(item => {
             const date = new Date(item.lastVisitTime);
@@ -420,30 +421,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             const month = date.getMonth() + 1;
             const day = date.getDate();
 
-            // 检查是否在最近12个月内
-            const isRecent = monthRanges.some(range => range.year === year && range.month === month);
-
-            let groupKey;
-            if (isRecent) {
-                groupKey = `${year}-${month.toString().padStart(2, '0')}`;
-            } else {
-                groupKey = 'earlier';
+            // 使用年份作为第一级分组
+            const yearKey = year.toString();
+            if (!groups[yearKey]) {
+                groups[yearKey] = {
+                    year,
+                    months: {}
+                };
             }
 
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    year,
+            // 使用月份作为第二级分组
+            const monthKey = month.toString().padStart(2, '0');
+            if (!groups[yearKey].months[monthKey]) {
+                groups[yearKey].months[monthKey] = {
                     month,
-                    isEarlier: groupKey === 'earlier',
                     days: {}
                 };
             }
 
-            if (!groups[groupKey].days[day]) {
-                groups[groupKey].days[day] = [];
+            // 使用日期作为第三级分组
+            const dayKey = day.toString().padStart(2, '0');
+            if (!groups[yearKey].months[monthKey].days[dayKey]) {
+                groups[yearKey].months[monthKey].days[dayKey] = [];
             }
 
-            groups[groupKey].days[day].push(item);
+            groups[yearKey].months[monthKey].days[dayKey].push(item);
         });
 
         return groups;
@@ -482,7 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await Promise.all(checkPromises);
     }
 
-    // 统计favicon使用频率并选择最佳favicon（优化版）
+    // 统计favicon使用率并选择最佳favicon（优化版）
     async function findBestFavicon(node) {
         // 收集所有叶子节点的URL和访问时间
         const collectLeafData = (node) => {
@@ -781,6 +783,78 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 treeData.children.push(rootNode);
             });
+        } else {
+            // 日期分组处理
+            const monthNames = {
+                en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                zh: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+            };
+
+            const weekDays = {
+                en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                zh: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+            };
+
+            const lang = getCurrentLanguage().startsWith('zh') ? 'zh' : 'en';
+
+            // 对年份进行排序
+            const sortedYears = Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+
+            for (const [year, yearData] of sortedYears) {
+                // 处理年份节点
+                const yearNode = {
+                    id: year,
+                    label: year,
+                    children: [],
+                    collapsed: true,
+                    isDateGroup: true
+                };
+
+                // 对月份进行排序
+                const sortedMonths = Object.entries(yearData.months).sort((a, b) => b[0].localeCompare(a[0]));
+
+                for (const [monthKey, monthData] of sortedMonths) {
+                    const monthNode = {
+                        id: `${year}-${monthKey}`,
+                        label: monthNames[lang][monthData.month - 1],
+                        children: [],
+                        collapsed: true,
+                        isDateGroup: true
+                    };
+
+                    // 对日期进行排序
+                    const sortedDays = Object.entries(monthData.days).sort((a, b) => b[0].localeCompare(a[0]));
+
+                    for (const [dayKey, items] of sortedDays) {
+                        const date = new Date(items[0].lastVisitTime);
+                        const weekDay = weekDays[lang][date.getDay()];
+                        const dayNode = {
+                            id: `${year}-${monthKey}-${dayKey}`,
+                            label: lang === 'zh' ?
+                                `${parseInt(dayKey)}日 ${weekDay} (${items.length})` :
+                                `${parseInt(dayKey)} ${weekDay} (${items.length})`,
+                            children: items.map(item => ({
+                                id: String(item.id),
+                                label: item.title || item.url,
+                                url: item.url,
+                                lastVisitTime: item.lastVisitTime,
+                                isLeaf: true
+                            })),
+                            collapsed: true,
+                            isDateGroup: true
+                        };
+                        monthNode.children.push(dayNode);
+                    }
+
+                    monthNode.label = lang === 'zh' ?
+                        `${monthNames[lang][monthData.month - 1]} (${monthNode.children.reduce((sum, day) => sum + day.children.length, 0)})` :
+                        `${monthNames[lang][monthData.month - 1]} (${monthNode.children.reduce((sum, day) => sum + day.children.length, 0)})`;
+                    yearNode.children.push(monthNode);
+                }
+
+                yearNode.label = `${year}年 (${yearNode.children.reduce((sum, month) => sum + month.children.reduce((s, day) => s + day.children.length, 0), 0)})`;
+                treeData.children.push(yearNode);
+            }
         }
 
         return treeData;
@@ -882,8 +956,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 计算节点宽度：文本宽度 + 右padding + 按钮区 + 图标区域
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
                 const iconSpace = 24; // 所有节点都预留图标空间
-                const maxTextWidth = 300; // 限制文本最大宽度
-                const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 400));
+                const maxTextWidth = 200; // 限制文本最大宽度
+                const minWidth = 150; // 设置最小宽度
+                const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, minWidth), 300);
 
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
@@ -918,7 +993,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'glass-bg'
                 });
 
-                // 只在亮色主题下添��玻璃态高光效果
+                // 只在亮主题下添加玻璃态高光效果
                 if (!isDarkTheme) {
                     group.addShape('rect', {
                         attrs: {
@@ -945,9 +1020,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         height: iconSize,
                         img: cfg.id === 'root' ?
                             `chrome-extension://${chrome.runtime.id}/icons/icon48.png` :
-                            (cfg.faviconUrl || ''),  // 直接使用预处理的 faviconUrl
+                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup ?
+                                `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16` :
+                                cfg.faviconUrl || ''),
                         cursor: 'pointer',
-                        opacity: cfg.id === 'root' || cfg.faviconUrl ? 1 : 0  // 如果没有图标则设置为透明
+                        opacity: cfg.id === 'root' ||
+                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup) ||
+                            (!cfg.isDateGroup && cfg.faviconUrl) ? 1 : 0
                     },
                     name: 'favicon'
                 });
@@ -964,9 +1043,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 绘制文本
                 const displayText = cfg.label;
+                const maxDisplayWidth = maxTextWidth - 10; // 留出一些空间给省略号
+                const truncatedText = textWidth > maxDisplayWidth ?
+                    displayText.substring(0, Math.floor(displayText.length * maxDisplayWidth / textWidth)) + '...' :
+                    displayText;
+
                 group.addShape('text', {
                     attrs: {
-                        text: displayText,
+                        text: truncatedText,
                         x: 36,  // 固定文本位置
                         y: height / 2,
                         fontSize: 13,
@@ -1113,8 +1197,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
                     const iconSpace = 24; // 所有节点都预留图标空间
-                    const maxTextWidth = 300; // 限制文本最大宽度
-                    return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 400));
+                    const maxTextWidth = 200; // 限制文本最大宽度
+                    const minWidth = 150; // 设置最小宽度
+                    return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, minWidth), 300);
                 },
                 getVGap: (node) => {
                     const model = node.getModel ? node.getModel() : node;
@@ -1140,6 +1225,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const groups = groupingMethod === 'domain'
             ? groupByDomain(historyItems)
             : groupByDate(historyItems);
+
+        // 更新排序控件的显示状态
+        const sortControls = document.getElementById('sortControls');
+        if (sortControls) {
+            sortControls.style.display = groupingMethod === 'domain' ? 'flex' : 'none';
+        }
 
         const treeData = await buildTreeData(groups);
         treeDataCache = treeData;  // 存树形数据
@@ -1314,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
 
-                        // 保持子节点的折叠状态
+                        // 保持子节点的折叠���态
                         if (childNode.getModel().collapsed) {
                             // 如果子节点是折叠状态，确保其子节点保持隐藏
                             const hideCollapsedChildren = (node) => {
@@ -1341,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 处理节点折叠
+    // 处理节点���叠
     const handleNodeCollapse = (item, model) => {
         model.collapsed = !model.collapsed;
         const collapsed = model.collapsed;
