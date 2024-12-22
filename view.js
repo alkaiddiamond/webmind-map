@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortSelect.value = currentValue || 'name';
         }
 
-        // ���新其他控件
+        // 更新其他控件
         themeToggle.textContent = t('toggleTheme');
         searchInput.placeholder = t('searchPlaceholder');
         searchButton.title = t('searchButton');
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
 
-                // 使用正则表达式处理数字开头的域名和IP地址
+                // 使用正则表达式处理数字开头的域��和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 移除可能的端口号和空格
                 hostname = hostname.split(':')[0].trim();
 
-                // 如果是 chrome:// 或 edge:// 等特殊协议，直接使用整个域���作为根域名
+                // 如果是 chrome:// 或 edge:// 等特殊协议，直接使用整个域作为根域名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     if (!groups[rootDomain]) {
@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 批量检查所有 URL 的 favicon
         await batchCheckFavicons(leafData.map(data => data.url));
 
-        // 统计有效的 favicon
+        // 统计��效的 favicon
         const faviconStats = new Map();
         for (const data of leafData) {
             if (faviconCache.get(data.url)) {
@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return sortDirection === 'desc' ? -result : result;
             });
 
-            // 等待所有 favicon 处理完成
+            // ��待所有 favicon 处理完成
             const processedEntries = await processFavicons(entries);
 
             // 构建树形数据
@@ -852,7 +852,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     yearNode.children.push(monthNode);
                 }
 
-                yearNode.label = `${year}年 (${yearNode.children.reduce((sum, month) => sum + month.children.reduce((s, day) => s + day.children.length, 0), 0)})`;
+                yearNode.label = lang === 'zh' ?
+                    `${year}年 (${yearNode.children.reduce((sum, month) => sum + month.children.reduce((s, day) => s + day.children.length, 0), 0)})` :
+                    `${year} (${yearNode.children.reduce((sum, month) => sum + month.children.reduce((s, day) => s + day.children.length, 0), 0)})`;
                 treeData.children.push(yearNode);
             }
         }
@@ -1020,19 +1022,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         height: iconSize,
                         img: cfg.id === 'root' ?
                             `chrome-extension://${chrome.runtime.id}/icons/icon48.png` :
-                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup ?
+                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup && !cfg.isSubdomain ?
                                 `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16` :
-                                cfg.faviconUrl || ''),
+                                (cfg.faviconUrl && !cfg.isDateGroup ? cfg.faviconUrl : '')),
                         cursor: 'pointer',
                         opacity: cfg.id === 'root' ||
-                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup) ||
-                            (!cfg.isDateGroup && cfg.faviconUrl) ? 1 : 0
+                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup && !cfg.isSubdomain) ||
+                            (cfg.faviconUrl && !cfg.isDateGroup) ? 1 : 0
                     },
                     name: 'favicon'
                 });
 
                 // 如果不是跳过 favicon 加载且没有预处理的 favicon，则加入加载队列
-                if (!skipFavicons && cfg.id !== 'root' && !cfg.faviconUrl) {
+                if (!skipFavicons && cfg.id !== 'root' && !cfg.isDateGroup && !cfg.faviconUrl) {
                     queueFaviconLoad(cfg, (faviconUrl) => {
                         if (iconShape && !iconShape.get('destroyed')) {
                             iconShape.attr('img', faviconUrl);
@@ -1318,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         graph.removeItem(item);
     };
 
-    // 处理非叶子节点删除
+    // ���理非叶子节点删除
     const handleNonLeafNodeDeletion = async (item, model) => {
         const deletePromises = [];
         collectUrlsToDelete(model, deletePromises);
@@ -1405,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
 
-                        // 保持子节点的折叠���态
+                        // 保持子节点的折叠态
                         if (childNode.getModel().collapsed) {
                             // 如果子节点是折叠状态，确保其子节点保持隐藏
                             const hideCollapsedChildren = (node) => {
@@ -1432,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 处理节点���叠
+    // 处理节点折叠
     const handleNodeCollapse = (item, model) => {
         model.collapsed = !model.collapsed;
         const collapsed = model.collapsed;
