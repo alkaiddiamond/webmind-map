@@ -258,15 +258,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const parts = hostname.split('.');
 
-        // 果分直返完域名
+        // 如果分段数小于等于2，直接返回完整域名
         if (parts.length <= 2) {
             return hostname;
         }
 
-        // 查最后两部分是构成特殊顶级域名
+        // 检查最后两部分是否构成特殊顶级域名
         const lastTwoParts = parts.slice(-2).join('.');
         if (specialDomains[lastTwoParts]) {
-            // 如果是特殊顶级域名，返回后部分
+            // 如果是特殊顶级域名，返回后三部分
             return parts.slice(-3).join('.');
         }
 
@@ -290,14 +290,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 尝试从URL中提取域名
                 const urlStr = item.url.toLowerCase();
 
-                // 改正则表达式以更好处理数字开头的域名和IP地址
+                // 使用正则表达式处理数字开头的域名和IP地址
                 const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
                 if (domainMatch) {
                     hostname = domainMatch[1].toLowerCase().trim();
-                    // 移除可能的号和空（确保再次查
+                    // 移除可能的端口号和空格
                     hostname = hostname.split(':')[0];
                 } else {
-                    // 果正则表达式失败，尝试使用 URL 对
+                    // 如果正则表达式匹配失败，尝试使用 URL 对象
                     try {
                         const url = new URL(urlStr);
                         hostname = url.hostname;
@@ -312,10 +312,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // 除可能的端号和空格（确保再次查）
+                // 移除可能的端口号和空格
                 hostname = hostname.split(':')[0].trim();
 
-                // 果 chrome://  edge:// 特殊协议直接使用整名作为根名
+                // 如果是 chrome:// 或 edge:// 等特殊协议，直接使用整个域名作为根域名
                 if (hostname.includes('://')) {
                     const rootDomain = hostname;
                     if (!groups[rootDomain]) {
@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (ipv4Regex.test(hostname) || ipv6Regex.test(hostname)) {
                     rootDomain = hostname;
                 } else if (!hostname.includes('.') || hostname === 'localhost') {
-                    // 如果本地地址
+                    // 如果是本地地址
                     rootDomain = hostname;
                 } else {
                     // 处理域名
@@ -356,16 +356,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // 确定根域名
                     if (parts.length === 1) {
-                        // 一级域
+                        // 一级域名
                         rootDomain = hostname;
                     } else {
-                        // 检查是否殊域名
+                        // 检查是否是特殊域名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
-                            // 如果是特殊顶级域（如 .com.cn），使用最后三部分作为根域名
+                            // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域名
                             rootDomain = parts.slice(-3).join('.');
                         } else {
-                            // 使用最后两部分作为根名（如 bilibili.com）
+                            // 使用最后两部分作为根域名（如 bilibili.com）
                             rootDomain = parts.slice(-2).join('.');
                         }
                     }
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 如果有无法析的 URL，添加 "其他" 分组
+        // 如果有无法解析的 URL，添加"其他"分组
         if (otherGroup.totalCount > 0) {
             groups[t('other')] = otherGroup;
         }
@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let subFaviconUrl = '';
 
                 if (validItems.length > 0) {
-                    // 对于子域名，直接使用最近访问的有效URL的favicon
+                    // 对于子域名，直接使用近访问的有效URL的favicon
                     const sortedItems = [...validItems].sort((a, b) => b.lastVisitTime - a.lastVisitTime);
                     const bestUrl = sortedItems[0].url;
                     if (faviconCache.get(bestUrl)) {
@@ -684,9 +684,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 域名分组处理
             const entries = Object.entries(groups);
 
-            // 根据选择的排序方式进行排序
+            // 根据选择的序方式进行排序
             entries.sort((a, b) => {
-                // 特殊理"其他"分组，始终放在最后
+                // 特殊处理"其他"分组，始终放在最后
                 if (a[0] === t('other')) return 1;
                 if (b[0] === t('other')) return -1;
 
@@ -788,7 +788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 初始折叠态
     const initializeCollapsedState = (graph, treeData) => {
-        // 首先确有节点见
+        // 首先确保有节点存在
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
@@ -846,7 +846,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        // 遍历所有节
+        // 遍历所有节点
         treeData.children.forEach(rootData => {
             const rootNode = graph.findById(rootData.id);
             if (rootNode) {
@@ -883,7 +883,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const buttonSpace = (!isLeaf && children && children.length) ? 90 : 40;
                 const iconSpace = 24; // 所有节点都预留图标空间
                 const maxTextWidth = 300; // 限制文本最大宽度
-                const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
+                const width = Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 400));
 
                 // 获取当前主题的颜色方案
                 const colorSchemes = getThemeColors();
@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'glass-bg'
                 });
 
-                // 只在亮色主题下添加玻璃态高光效果
+                // 只在亮色主题下添��玻璃态高光效果
                 if (!isDarkTheme) {
                     group.addShape('rect', {
                         attrs: {
@@ -1105,8 +1105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return d.id;
                 },
                 getHeight: () => 40,
-                getWidth: (d) => {
-                    // 创建时canvas计算文本宽
+                getWidth: function (d) {
+                    // 创建时canvas计算文本宽度
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     context.font = '13px Arial';
@@ -1114,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
                     const iconSpace = 24; // 所有节点都预留图标空间
                     const maxTextWidth = 300; // 限制文本最大宽度
-                    return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 180), 400);
+                    return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, 400));
                 },
                 getVGap: (node) => {
                     const model = node.getModel ? node.getModel() : node;
@@ -1152,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         graph.getNodes().forEach(node => {
             if (!node.get('parent')) {
                 graph.showItem(node);
-                // 显示连接到节点的边
+                // 显示连接节点的边
                 graph.getEdges().forEach(edge => {
                     if (edge.getSource().get('id') === node.get('id')) {
                         graph.showItem(edge);
@@ -1267,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 处理��节点显示/隐藏
+    // 处理节点显示/隐藏
     const processChildren = (node, isCollapsed) => {
         const nodeModel = node.getModel();
 
@@ -1286,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
 
-                        // 递归隐藏所有子节点的子节点
+                        // 归隐藏所有子节点的子节点
                         const hideChildren = (node) => {
                             if (node.children) {
                                 node.children.forEach(grandChild => {
@@ -1440,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 监听搜索按钮点击
         searchButton.addEventListener('click', executeSearch);
 
-        // 导航按钮点击事
+        // 导航按钮点击事件
         searchPrev.addEventListener('click', () => {
             navigateSearch('prev');
         });
@@ -1451,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function performSearch(query) {
-        // 除之前索结果
+        // 清除之前的搜索结果
         clearSearchHighlights();
         searchResults = [];
         currentSearchIndex = -1;
@@ -1466,18 +1466,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 存储所有匹配的节点和它的路径
         const matchedPaths = [];
 
-        // 递归索函数
+        // 归搜索函数
         function searchNode(nodeData, currentPath = []) {
             const label = nodeData.label || '';
             const url = nodeData.url || '';
             const isMatched = label.toLowerCase().includes(queryLower) || url.toLowerCase().includes(queryLower);
 
-            // 果当节点匹配，记录完路径
+            // 如果当前节点匹配，记录完整路径
             if (isMatched) {
                 matchedPaths.push([...currentPath, nodeData]);
             }
 
-            // 继续搜索节点论是否叠
+            // 继续搜索节点，无论是否折叠
             if (nodeData.children) {
                 nodeData.children.forEach(child => {
                     searchNode(child, [...currentPath, nodeData]);
@@ -1485,20 +1485,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // 从缓存的树形据始搜索
+        // 从缓存的树形数据开始搜索
         if (treeDataCache.children) {
             treeDataCache.children.forEach(child => {
                 searchNode(child, []);
             });
         }
 
-        // 如果没匹配结果，直接返回
+        // 如果没有匹配结果，直接返回
         if (matchedPaths.length === 0) {
             updateSearchInfo();
             return;
         }
 
-        // 找到最大
+        // 找到最大深度
         const maxDepth = Math.max(...matchedPaths.map(path => path.length));
 
         // 按深度逐层展开节点
@@ -1543,19 +1543,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // 如果当前度有节点被展开更新布局
+            // 如果当前深度有节点被展开，更新布局
             if (hasExpandedNodes) {
                 graph.layout();
                 graph.paint();
             }
 
-            // 果还有更深的层级继续展开
+            // 如果还有更深的层级，继续展开
             if (depth < maxDepth) {
                 setTimeout(() => {
                     expandNodesAtDepth(depth + 1);
-                }, 100); // 延迟100ms展开下一层
+                }, 100);
             } else {
-                // 所有层级都展开成后亮匹配节点
+                // 所有层级都展开完成后，高亮匹配节点
                 highlightMatchedNodes();
             }
         }
@@ -1606,11 +1606,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const node = searchResults[currentSearchIndex];
         if (!node) return;
 
-        // 获取节点的大小信息
+        // 获取节点的位置信息
         const bbox = node.getBBox();
         const group = node.get('group');
 
-        // 除前的焦点样式
+        // 清除之前的焦点样式
         const oldFocus = group.findAll(element => element.get('name') === 'search-focus');
         oldFocus.forEach(shape => shape.remove());
 
@@ -1647,7 +1647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return parents;
         };
 
-        // 计算包含当前节点及其有节点边框
+        // 计算包含当前节点及其父节点的边框
         const parentNodes = getParentNodes(node);
         const allNodes = [node, ...parentNodes];
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1673,7 +1673,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const scaleX = viewportWidth / contentWidth;
         const scaleY = viewportHeight / contentHeight;
-        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大放级别为1
+        const scale = Math.min(Math.min(scaleX, scaleY), 1);  // 限制最大放大级别为1
 
         // 先缩放到合适的级别
         graph.zoomTo(scale, {
@@ -1688,7 +1688,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             padding: [50, 50, 50, 50]
         });
 
-        // 更新搜���信息
+        // 更新搜索信息
         updateSearchInfo();
     }
 
@@ -1709,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearSearchHighlights() {
         graph.findAll('node', node => {
             const group = node.get('group');
-            // 移除所有索相关形状
+            // 移除所有搜索相关形状
             const shapes = group.get('children').filter(shape =>
                 shape.get('name') === 'search-highlight' ||
                 shape.get('name') === 'search-focus'
@@ -1723,7 +1723,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearSearchFocus() {
         graph.findAll('node', node => {
             const group = node.get('group');
-            // 移除焦点亮
+            // 移除焦点高亮
             const shapes = group.get('children').filter(shape =>
                 shape.get('name') === 'search-focus'
             );
@@ -1746,7 +1746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         if (typeof G6 === 'undefined') {
-            throw new Error('G6 库未能正载');
+            throw new Error('G6 库未能正确加载');
         }
 
         // 初始加载
