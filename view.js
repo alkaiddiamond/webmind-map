@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // 移除可能的端口号和空格
                     hostname = hostname.split(':')[0];
                 } else {
-                    // 如果正则表达式匹配失败，尝试使用 URL 对象
+                    // 果正则表达式匹配失败尝试使用 URL 对象
                     try {
                         const url = new URL(urlStr);
                         hostname = url.hostname;
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // 一级域名
                         rootDomain = hostname;
                     } else {
-                        // 检查是否是特殊域名
+                        // 查是否是特殊域名
                         const lastTwoParts = parts.slice(-2).join('.');
                         if (specialDomains[lastTwoParts]) {
                             // 如果是特殊顶级域名（如 .com.cn），使用最后三部分作为根域名
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return groups;
     };
 
-    // 按期分组
+    // 按日期分组
     const groupByDate = (items) => {
         const groups = {};
 
@@ -474,10 +474,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 使用日期作为第三级分组
             const dayKey = day.toString().padStart(2, '0');
             if (!groups[yearKey].months[monthKey].days[dayKey]) {
-                groups[yearKey].months[monthKey].days[dayKey] = [];
+                groups[yearKey].months[monthKey].days[dayKey] = {
+                    items: [],
+                    domains: {}
+                };
             }
 
-            groups[yearKey].months[monthKey].days[dayKey].push(item);
+            // 提取域名
+            let hostname;
+            try {
+                const urlStr = item.url.toLowerCase();
+                const domainMatch = urlStr.match(/^(?:https?:\/\/)?([^\/\s]+)/i);
+                if (domainMatch) {
+                    hostname = domainMatch[1].toLowerCase().trim();
+                    hostname = hostname.split(':')[0]; // 移除端口号
+                } else {
+                    hostname = 'other';
+                }
+            } catch (error) {
+                hostname = 'other';
+            }
+
+            // 按域名分组
+            const dayGroup = groups[yearKey].months[monthKey].days[dayKey];
+            if (!dayGroup.domains[hostname]) {
+                dayGroup.domains[hostname] = [];
+            }
+            dayGroup.domains[hostname].push(item);
+            dayGroup.items.push(item);
         });
 
         return groups;
@@ -516,7 +540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await Promise.all(checkPromises);
     }
 
-    // 统计favicon使用率并选择最佳favicon（优化版）
+    // 统计favicon使用率并选择最佳favicon优化版）
     async function findBestFavicon(node) {
         // 收集所有叶子节点的URL和访问时间
         const collectLeafData = (node) => {
@@ -836,7 +860,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 处理年份节点
                 const yearNode = {
                     id: year,
-                    label: year,
+                    label: lang === 'zh' ? `${year}年` : year,
                     children: [],
                     collapsed: true,
                     isDateGroup: true
@@ -857,36 +881,68 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // 对日期进行排序
                     const sortedDays = Object.entries(monthData.days).sort((a, b) => b[0].localeCompare(a[0]));
 
-                    for (const [dayKey, items] of sortedDays) {
-                        const date = new Date(items[0].lastVisitTime);
+                    for (const [dayKey, dayData] of sortedDays) {
+                        const date = new Date(dayData.items[0].lastVisitTime);
                         const weekDay = weekDays[lang][date.getDay()];
                         const dayNode = {
                             id: `${year}-${monthKey}-${dayKey}`,
                             label: lang === 'zh' ?
-                                `${parseInt(dayKey)}日 ${weekDay} (${items.length})` :
-                                `${parseInt(dayKey)} ${weekDay} (${items.length})`,
-                            children: items.map(item => ({
-                                id: String(item.id),
-                                label: item.title || item.url,
-                                url: item.url,
-                                lastVisitTime: item.lastVisitTime,
-                                isLeaf: true
-                            })),
+                                `${parseInt(dayKey)}日 ${weekDay} (${dayData.items.length})` :
+                                `${parseInt(dayKey)} ${weekDay} (${dayData.items.length})`,
+                            children: [],
                             collapsed: true,
                             isDateGroup: true
                         };
+
+                        // 对域名进行排序
+                        const sortedDomains = Object.entries(dayData.domains).sort((a, b) => {
+                            if (a[0] === 'other') return 1;
+                            if (b[0] === 'other') return -1;
+                            return a[0].localeCompare(b[0]);
+                        });
+
+                        // 添加域名节点
+                        for (const [domain, items] of sortedDomains) {
+                            const domainNode = {
+                                id: `${year}-${monthKey}-${dayKey}-${domain}`,
+                                label: `${domain} (${items.length})`,
+                                children: items.map(item => ({
+                                    id: String(item.id),
+                                    label: item.title || item.url,
+                                    url: item.url,
+                                    lastVisitTime: item.lastVisitTime,
+                                    isLeaf: true
+                                })),
+                                collapsed: true,
+                                isDomainGroup: true
+                            };
+                            dayNode.children.push(domainNode);
+                        }
+
                         monthNode.children.push(dayNode);
                     }
 
-                    monthNode.label = lang === 'zh' ?
-                        `${monthNames[lang][monthData.month - 1]} (${monthNode.children.reduce((sum, day) => sum + day.children.length, 0)})` :
-                        `${monthNames[lang][monthData.month - 1]} (${monthNode.children.reduce((sum, day) => sum + day.children.length, 0)})`;
+                    const monthCount = monthNode.children.reduce((sum, day) => {
+                        return sum + day.children.reduce((s, domain) => {
+                            return s + domain.children.length;
+                        }, 0);
+                    }, 0);
+
+                    monthNode.label = `${monthNames[lang][monthData.month - 1]} (${monthCount})`;
                     yearNode.children.push(monthNode);
                 }
 
+                const totalCount = yearNode.children.reduce((sum, month) => {
+                    return sum + month.children.reduce((s, day) => {
+                        return s + day.children.reduce((d, domain) => {
+                            return d + domain.children.length;
+                        }, 0);
+                    }, 0);
+                }, 0);
+
                 yearNode.label = lang === 'zh' ?
-                    `${year}年 (${yearNode.children.reduce((sum, month) => sum + month.children.reduce((s, day) => s + day.children.length, 0), 0)})` :
-                    `${year} (${yearNode.children.reduce((sum, month) => sum + month.children.reduce((s, day) => s + day.children.length, 0), 0)})`;
+                    `${year}年 (${totalCount})` :
+                    `${year} (${totalCount})`;
                 treeData.children.push(yearNode);
             }
         }
@@ -1054,23 +1110,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                         height: iconSize,
                         img: cfg.id === 'root' ?
                             `chrome-extension://${chrome.runtime.id}/icons/icon48.png` :
-                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup && !cfg.isSubdomain ?
+                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup ?
                                 `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(cfg.url)}&size=16` :
-                                (cfg.faviconUrl && !cfg.isDateGroup ? cfg.faviconUrl : '')),
+                                (cfg.faviconUrl && !cfg.isDateGroup && !cfg.isSubdomain ? cfg.faviconUrl : '')),
                         cursor: 'pointer',
                         opacity: cfg.id === 'root' ||
-                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup && !cfg.isSubdomain) ||
-                            (cfg.faviconUrl && !cfg.isDateGroup) ? 1 : 0
+                            (cfg.isLeaf && cfg.url && !cfg.isDateGroup) ||
+                            (cfg.faviconUrl && !cfg.isDateGroup && !cfg.isSubdomain) ? 1 : 0
                     },
                     name: 'favicon'
                 });
 
-                // 如果不是跳过 favicon 加载且没有预处理的 favicon，则加入加载队列
+                // 如果不是跳过 favicon 加载且没预处理的 favicon，则加入加载队列
                 if (!skipFavicons && cfg.id !== 'root' && !cfg.isDateGroup && !cfg.faviconUrl) {
                     queueFaviconLoad(cfg, (faviconUrl) => {
                         if (iconShape && !iconShape.get('destroyed')) {
                             iconShape.attr('img', faviconUrl);
-                            iconShape.attr('opacity', 1);  // 加载完成后显示图标
+                            iconShape.attr('opacity', 1);  // 加载成后显示图标
                         }
                     });
                 }
@@ -1230,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     context.font = '13px Arial';
                     const textWidth = context.measureText(d.label).width;
                     const buttonSpace = (!d.isLeaf && d.children && d.children.length) ? 90 : 40;
-                    const iconSpace = 24; // 所有节点都预留图标空间
+                    const iconSpace = (d.isLeaf || d.isDomainGroup || groupBySelect.value === 'domain') ? 24 : 0; // 只为叶子节点、域名节点和域名分组视图预留图标空间
                     const maxTextWidth = 200; // 限制文本最大宽度
                     const minWidth = 150; // 设置最小宽度
                     return Math.min(Math.max(Math.min(textWidth, maxTextWidth) + 24 + buttonSpace + iconSpace, minWidth), 300);
@@ -1286,7 +1342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 初始化折叠状���
+        // 初始化折叠状态
         initializeCollapsedState(graph, treeData);
 
         // 绑定事件监听器
@@ -1444,7 +1500,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         // 保持子节点的折叠态
                         if (childNode.getModel().collapsed) {
-                            // 如果子节点是折叠状态，确保其子节点保持隐藏
+                            // 如果子节点是折叠状态，确保其子节点持隐藏
                             const hideCollapsedChildren = (node) => {
                                 if (node.children) {
                                     node.children.forEach(grandChild => {
@@ -1481,7 +1537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             icon.attr('text', collapsed ? '+' : '-');
         }
 
-        // 处理子节点显示/隐藏
+        // 处理节点显示/隐藏
         processChildren(item, collapsed);
 
         // 更新节点状态
@@ -1544,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 在 DOMContentLoaded 事件处理函数中，loadHistoryItems 之前添加
+    // 在 DOMContentLoaded 事件处数中，loadHistoryItems 之前添加
     // 初始化搜索功能
     initializeSearch();
 
@@ -1644,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             icon.attr('text', '-');
                         }
 
-                        // 显示子节点和边
+                        // 显示子���点和边
                         if (model.children) {
                             model.children.forEach(childData => {
                                 const childNode = graph.findById(childData.id);
@@ -1677,7 +1733,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         model.collapsed = false;
                         graph.updateItem(node, { collapsed: false });
 
-                        // 更新展开/折叠图标
+                        // 更新展开/折叠���标
                         const group = node.getContainer();
                         const icon = group.find(element => element.get('name') === 'collapse-text');
                         if (icon) {
