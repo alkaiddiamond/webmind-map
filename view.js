@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // 移除可能的端口号和空格
                     hostname = hostname.split(':')[0];
                 } else {
-                    // 果正则表达式匹配失败尝试使用 URL 对象
+                    // 果正则表达式匹配失败尝试使��� URL 对象
                     try {
                         const url = new URL(urlStr);
                         hostname = url.hostname;
@@ -1307,7 +1307,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             fitView: true,
             fitViewPadding: [50, 50, 50, 50],
             minZoom: 0.2,
-            maxZoom: 2
+            maxZoom: 2,
+            // 添加自适应配置
+            autofit: true,
+            fitCenter: true
         });
 
         // 数据
@@ -1545,7 +1548,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             collapsed: collapsed
         });
 
-        // 重新布局
+        // ��新布局
         graph.layout();
     };
 
@@ -1626,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 监听搜索按钮点击
+        // 监听搜索按钮��击
         searchButton.addEventListener('click', executeSearch);
 
         // 导航按钮点击事件
@@ -1700,7 +1703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             icon.attr('text', '-');
                         }
 
-                        // 显示子���点和边
+                        // 显示子节点和边
                         if (model.children) {
                             model.children.forEach(childData => {
                                 const childNode = graph.findById(childData.id);
@@ -1733,7 +1736,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         model.collapsed = false;
                         graph.updateItem(node, { collapsed: false });
 
-                        // 更新展开/折叠���标
+                        // 更新展开/折叠图标
                         const group = node.getContainer();
                         const icon = group.find(element => element.get('name') === 'collapse-text');
                         if (icon) {
@@ -1887,6 +1890,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     }
+
+    // 在 DOMContentLoaded 事件处理函数中添加窗口大小调整的监听器
+    // 添加防抖函数
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // 处理窗口大小调整
+    const handleResize = () => {
+        if (graph) {
+            const container = document.getElementById('container');
+            const width = container.scrollWidth;
+            const height = container.scrollHeight || 600;
+
+            // 更新图形大小
+            graph.changeSize(width, height);
+
+            // 重新布局并适应视图
+            graph.layout();
+            graph.fitView([50, 50, 50, 50]);
+        }
+    };
+
+    // 添加防抖的窗口大小调整监听器
+    window.addEventListener('resize', debounce(handleResize, 200));
 
     try {
         if (typeof G6 === 'undefined') {
